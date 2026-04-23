@@ -18,6 +18,11 @@ import CopyExperts from "./pages/dashboard/CopyExperts";
 import Plans from "./pages/dashboard/Plans";
 import KYC from "./pages/dashboard/KYC";
 import SettingsPage from "./pages/dashboard/Settings";
+import AdminLayout from "./pages/admin/AdminLayout";
+import AdminOverview from "./pages/admin/AdminOverview";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminDeposits from "./pages/admin/AdminDeposits";
+import AdminWithdrawals from "./pages/admin/AdminWithdrawals";
 import { ThemeProvider } from "./hooks/use-theme";
 import { AuthProvider } from "./hooks/use-auth";
 
@@ -46,6 +51,12 @@ const App = () => (
             <Route path="plans" element={<Plans />} />
             <Route path="kyc" element={<KYC />} />
             <Route path="settings" element={<SettingsPage />} />
+          </Route>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminOverview />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="deposits" element={<AdminDeposits />} />
+            <Route path="withdrawals" element={<AdminWithdrawals />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
