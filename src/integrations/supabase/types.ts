@@ -14,16 +14,163 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      deposits: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          method: string
+          proof_url: string | null
+          status: string | null
+          user_id: string
+          wallet_address: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          method: string
+          proof_url?: string | null
+          status?: string | null
+          user_id: string
+          wallet_address?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          method?: string
+          proof_url?: string | null
+          status?: string | null
+          user_id?: string
+          wallet_address?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          account_level: Database["public"]["Enums"]["account_level"] | null
+          account_type: Database["public"]["Enums"]["account_type"] | null
+          balance: number | null
+          country: string | null
+          created_at: string | null
+          email: string
+          full_name: string
+          gender: string | null
+          id: string
+          phone: string | null
+          preferred_currency: string | null
+          profit: number | null
+          total_deposit: number | null
+          total_withdraw: number | null
+          username: string
+        }
+        Insert: {
+          account_level?: Database["public"]["Enums"]["account_level"] | null
+          account_type?: Database["public"]["Enums"]["account_type"] | null
+          balance?: number | null
+          country?: string | null
+          created_at?: string | null
+          email: string
+          full_name: string
+          gender?: string | null
+          id: string
+          phone?: string | null
+          preferred_currency?: string | null
+          profit?: number | null
+          total_deposit?: number | null
+          total_withdraw?: number | null
+          username: string
+        }
+        Update: {
+          account_level?: Database["public"]["Enums"]["account_level"] | null
+          account_type?: Database["public"]["Enums"]["account_type"] | null
+          balance?: number | null
+          country?: string | null
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          gender?: string | null
+          id?: string
+          phone?: string | null
+          preferred_currency?: string | null
+          profit?: number | null
+          total_deposit?: number | null
+          total_withdraw?: number | null
+          username?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      withdrawals: {
+        Row: {
+          amount: number
+          created_at: string | null
+          destination: string | null
+          id: string
+          method: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          destination?: string | null
+          id?: string
+          method: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          destination?: string | null
+          id?: string
+          method?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_email_by_username: { Args: { _username: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      account_level: "basic" | "veteran" | "ultimate" | "master" | "diamond"
+      account_type:
+        | "crypto_mining"
+        | "pro_trader"
+        | "copy_trading"
+        | "ai_trading"
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +297,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      account_level: ["basic", "veteran", "ultimate", "master", "diamond"],
+      account_type: [
+        "crypto_mining",
+        "pro_trader",
+        "copy_trading",
+        "ai_trading",
+      ],
+      app_role: ["admin", "user"],
+    },
   },
 } as const
