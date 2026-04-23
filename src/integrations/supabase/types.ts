@@ -162,6 +162,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      promote_to_admin: { Args: { _email: string }; Returns: undefined }
     }
     Enums: {
       account_level: "basic" | "veteran" | "ultimate" | "master" | "diamond"
