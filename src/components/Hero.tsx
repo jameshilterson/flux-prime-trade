@@ -28,8 +28,8 @@ export const Hero = () => {
             </span>
           </h1>
 
-          <div className="mt-8 h-8 overflow-hidden">
-            <p className="text-lg md:text-xl text-gold font-medium animate-slide-blur">
+          <div className="mt-8 min-h-[2.5rem] md:min-h-[2rem] px-2">
+            <p className="text-base sm:text-lg md:text-xl text-gold font-medium animate-slide-blur whitespace-normal break-words">
               Secured & Easy Way To Trade Forex & Crypto
             </p>
           </div>
