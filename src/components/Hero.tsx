@@ -51,7 +51,7 @@ export const Hero = () => {
 
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight text-white leading-[1.02]">
             <span className="block animate-word-rise" style={{ animationDelay: "0.1s" }}>Your Wealth.</span>
-            <span className="block animate-word-rise bg-gold-gradient bg-clip-text text-transparent" style={{ animationDelay: "0.35s" }}>
+            <span className="block animate-word-rise text-gold" style={{ animationDelay: "0.35s" }}>
               Engineered Daily.
             </span>
           </h1>
