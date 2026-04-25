@@ -2,7 +2,6 @@ import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
 import { StatsTicker } from "@/components/StatsTicker";
 import { LiveCryptoTicker } from "@/components/LiveCryptoTicker";
-import { SplashIntro } from "@/components/SplashIntro";
 import { CryptoConverter } from "@/components/CryptoConverter";
 import { ProfitCalculator } from "@/components/ProfitCalculator";
 import { PlansSection } from "@/components/PlansSection";
@@ -23,7 +22,6 @@ const FEATURES = [
 
 const Index = () => (
   <div className="min-h-screen bg-background">
-    <SplashIntro />
     <Navbar />
     <main>
       <Hero />
