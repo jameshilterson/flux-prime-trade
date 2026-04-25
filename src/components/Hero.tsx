@@ -55,7 +55,7 @@ export const Hero = () => {
             <Shield className="h-3 w-3" /> Trusted by 250,000+ investors worldwide
           </div>
 
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight text-white leading-[1.05]">
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight text-white leading-[1.05] animate-slide-in-left">
             Earn Passive Income<br />
             Through Smart{" "}
             <span className="bg-gold-gradient bg-clip-text text-transparent inline-block min-h-[1.1em]">
@@ -70,7 +70,10 @@ export const Hero = () => {
             </p>
           </div>
 
-          <p className="mt-6 text-base md:text-lg text-white/70 max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: "0.4s" }}>
+          <p
+            className="mt-6 text-base md:text-lg text-white/70 max-w-2xl mx-auto animate-fade-in animate-subtle-pulse opacity-0"
+            style={{ animationDelay: "0.9s, 1.5s", animationFillMode: "forwards" }}
+          >
             At <span className="text-gold font-semibold">CryptoVault</span>, we are committed to providing you with a secure, reliable,
             and high-performance trading experience.
           </p>
