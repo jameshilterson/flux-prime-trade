@@ -4,16 +4,19 @@ import { TrendingUp, DollarSign, UserPlus, ArrowDownToLine } from "lucide-react"
 const NAMES = ["John", "Peter", "Michael", "Sofia", "Aisha", "Yuki", "Liam", "Marcus", "Elena", "Carlos", "Priya", "Amara"];
 const COUNTRIES = ["Italy", "Canada", "UAE", "Japan", "Germany", "Brazil", "Singapore", "France", "Spain", "Australia"];
 const ACTIONS = [
-  { type: "earned", icon: DollarSign, color: "text-success", verb: "just earned" },
-  { type: "withdrew", icon: ArrowDownToLine, color: "text-gold", verb: "withdrew" },
-  { type: "deposit", icon: TrendingUp, color: "text-gold", verb: "deposited" },
-  { type: "joined", icon: UserPlus, color: "text-success", verb: "joined from", isJoin: true },
+  { type: "earned", icon: DollarSign, verb: "just earned" },
+  { type: "withdrew", icon: ArrowDownToLine, verb: "withdrew" },
+  { type: "deposit", icon: TrendingUp, verb: "deposited" },
+  { type: "joined", icon: UserPlus, verb: "joined from", isJoin: true },
 ];
 
 const rand = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
 
 export const LiveEarningsPopup = () => {
-  const [item, setItem] = useState<{ id: number; text: string; Icon: typeof DollarSign; color: string } | null>(null);
+  const [item, setItem] = useState<
+    | { id: number; name?: string; country: string; verb: string; isJoin?: boolean; amount?: number; Icon: typeof DollarSign }
+    | null
+  >(null);
 
   useEffect(() => {
     const tick = () => {
@@ -21,10 +24,15 @@ export const LiveEarningsPopup = () => {
       const name = rand(NAMES);
       const country = rand(COUNTRIES);
       const amount = (Math.floor(Math.random() * 90) + 5) * 1000;
-      const text = action.isJoin
-        ? `New investor ${action.verb} ${country}`
-        : `${name} from ${country} ${action.verb} $${amount.toLocaleString()}`;
-      setItem({ id: Date.now(), text, Icon: action.icon, color: action.color });
+      setItem({
+        id: Date.now(),
+        name,
+        country,
+        verb: action.verb,
+        isJoin: action.isJoin,
+        amount,
+        Icon: action.icon,
+      });
       setTimeout(() => setItem(null), 5000);
     };
     const initial = setTimeout(tick, 2500);
@@ -33,14 +41,32 @@ export const LiveEarningsPopup = () => {
   }, []);
 
   if (!item) return null;
+  const Icon = item.Icon;
   return (
     <div key={item.id} className="fixed bottom-6 left-6 z-50 animate-float-up">
-      {/* Token-driven: bg-card auto-inverts (white card on dark site, dark card on light dashboard) */}
-      <div className="flex items-center gap-3 rounded-xl border border-border bg-card text-card-foreground shadow-elegant p-3 pr-5 max-w-[320px]">
-        <div className={`h-9 w-9 rounded-lg bg-muted flex items-center justify-center ${item.color}`}>
-          <item.Icon className="h-4 w-4" />
+      {/* Brand-locked colors per spec: turquoise bg, white text, yellow amount */}
+      <div
+        className="flex items-center gap-3 rounded-xl shadow-elegant p-3 pr-5 max-w-[340px]"
+        style={{ backgroundColor: "#1BD7C5", color: "#FFFFFF" }}
+      >
+        <div
+          className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0"
+          style={{ backgroundColor: "rgba(255,255,255,0.18)", color: "#FFFFFF" }}
+        >
+          <Icon className="h-4 w-4" />
         </div>
-        <p className="text-sm font-medium">{item.text}</p>
+        <p className="text-sm font-medium leading-tight">
+          {item.isJoin ? (
+            <>New investor {item.verb} <span className="font-bold">{item.country}</span></>
+          ) : (
+            <>
+              {item.name} from {item.country} {item.verb}{" "}
+              <span className="font-bold" style={{ color: "#FFF508" }}>
+                ${item.amount?.toLocaleString()}
+              </span>
+            </>
+          )}
+        </p>
       </div>
     </div>
   );
