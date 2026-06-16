@@ -34,8 +34,8 @@ export const HowItWorks = () => (
           >
             <div className="flex items-center gap-3 mb-4">
               <div
-                className="h-10 w-10 rounded-full text-primary-foreground flex items-center justify-center font-black"
-                style={{ backgroundColor: "#0E57AF" }}
+                className="h-10 w-10 rounded-full text-white flex items-center justify-center font-black"
+                style={{ backgroundColor: "#00D4FF" }}
               >
                 {s.n}
               </div>

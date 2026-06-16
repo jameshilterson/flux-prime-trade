@@ -43,29 +43,23 @@ export const Hero = () => {
 
   return (
     <section className="relative overflow-hidden min-h-[88vh] md:min-h-[92vh] flex items-center">
-      {/* Background slides — crossfade */}
       {SLIDES.map((s, i) => (
         <div
           key={i}
           className="absolute inset-0 transition-opacity duration-[1500ms] ease-in-out bg-cover bg-center"
-          style={{
-            backgroundImage: `url(${s.image})`,
-            opacity: i === index ? 1 : 0,
-          }}
+          style={{ backgroundImage: `url(${s.image})`, opacity: i === index ? 1 : 0 }}
           aria-hidden={i !== index}
         />
       ))}
 
-      {/* Dark overlay so text reads but image still shows through */}
+      {/* Clean dark overlay only — no glow, no radial, no halo */}
       <div className="absolute inset-0 bg-black/55" />
-      <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-background" />
 
       <div className="container relative py-24 md:py-32">
         <div className="max-w-3xl text-left md:text-center md:mx-auto">
-          {/* Synced text — keyed on index so each transition runs the animation */}
           <div key={index} className="space-y-6 animate-fade-in">
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.05]">
-              <span style={{ color: "#0E57AF" }}>{SLIDES[index].blue}</span>{" "}
+              <span style={{ color: "#00D4FF" }}>{SLIDES[index].blue}</span>{" "}
               <span className="text-white">{SLIDES[index].white}</span>
             </h1>
             <p className="text-base md:text-lg text-white/85 max-w-2xl md:mx-auto">
@@ -73,7 +67,6 @@ export const Hero = () => {
             </p>
           </div>
 
-          {/* Static CTAs — animate once on first load only */}
           <div className="mt-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-start md:justify-center gap-4 animate-fade-in">
             <Button variant="hero" size="lg" className="w-full sm:w-auto" onClick={() => navigate("/signup")}>
               Sign Up <ArrowRight className="ml-2 h-4 w-4" />
@@ -83,7 +76,6 @@ export const Hero = () => {
             </Button>
           </div>
 
-          {/* Slide indicators */}
           <div className="mt-10 flex items-center gap-2 justify-start md:justify-center">
             {SLIDES.map((_, i) => (
               <button
@@ -91,7 +83,7 @@ export const Hero = () => {
                 onClick={() => setIndex(i)}
                 aria-label={`Slide ${i + 1}`}
                 className={`h-1.5 rounded-full transition-all ${
-                  i === index ? "w-8 bg-gold" : "w-2.5 bg-white/40 hover:bg-white/70"
+                  i === index ? "w-8 bg-primary" : "w-2.5 bg-white/40 hover:bg-white/70"
                 }`}
               />
             ))}

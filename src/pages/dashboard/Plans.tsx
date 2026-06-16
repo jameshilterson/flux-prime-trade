@@ -1,23 +1,17 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Check, Sparkles } from "lucide-react";
 import { PLANS } from "@/lib/constants";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { toast } from "sonner";
-
-const PLAN_TO_LEVEL: Record<string, "basic" | "veteran" | "ultimate" | "master" | "diamond"> = {
-  Basic: "basic",
-  Premium: "veteran",
-  VIP: "ultimate",
-};
 
 const Plans = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [level, setLevel] = useState<string>("basic");
   const [balance, setBalance] = useState(0);
-  const [loading, setLoading] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -27,58 +21,51 @@ const Plans = () => {
       });
   }, [user]);
 
-  const activate = async (plan: typeof PLANS[number]) => {
-    if (!user) return;
-    if (balance < plan.min) {
-      toast.error(`Minimum $${plan.min.toLocaleString()} balance required. Please deposit first.`);
-      return;
-    }
-    setLoading(plan.name);
-    const newLevel = PLAN_TO_LEVEL[plan.name];
-    const { error } = await supabase.from("profiles").update({ account_level: newLevel }).eq("id", user.id);
-    setLoading(null);
-    if (error) { toast.error(error.message); return; }
-    setLevel(newLevel);
-    toast.success(`${plan.name} plan activated! Daily ROI ${plan.roi}% for ${plan.duration} days.`);
-  };
-
   return (
     <div>
-      <h1 className="text-2xl font-black mb-1">Investment Plans</h1>
-      <p className="text-sm text-muted-foreground mb-6">
-        Current plan: <span className="text-gold font-bold uppercase">{level}</span> · Balance:{" "}
-        <span className="font-bold">${balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+      <h1 className="text-2xl font-black mb-1 text-white">Trading Plans</h1>
+      <p className="text-sm text-white/70 mb-6">
+        Current plan: <span className="text-primary font-bold uppercase">{level}</span> · Balance:{" "}
+        <span className="font-bold text-white">${balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
       </p>
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {PLANS.map((p) => {
-          const isActive = PLAN_TO_LEVEL[p.name] === level;
+          const featured = p.popular;
           return (
-            <Card key={p.name} className={`relative p-8 ${p.popular ? "border-gold/50 shadow-gold" : "border-border"}`}>
-              {p.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gold-gradient px-3 py-1 text-xs font-bold text-midnight flex items-center gap-1">
+            <Card
+              key={p.name}
+              className="relative p-8 border-0 text-white"
+              style={{ backgroundColor: featured ? "#00D4FF" : "#253E60" }}
+            >
+              {featured && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-white px-3 py-1 text-xs font-bold text-[#172640] flex items-center gap-1">
                   <Sparkles className="h-3 w-3" /> Most Popular
                 </div>
               )}
               <h3 className="text-xl font-bold">{p.name}</h3>
               <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-4xl font-black text-gold">{p.roi}%</span>
-                <span className="text-muted-foreground">/ daily</span>
+                <span className="text-4xl font-black">{p.roi}%</span>
+                <span className="opacity-80">/ daily</span>
               </div>
-              <p className="text-sm text-muted-foreground mt-1">for {p.duration} days</p>
+              <p className="text-sm opacity-80 mt-1">for {p.duration} days</p>
               <ul className="mt-6 space-y-3 text-sm">
-                <li className="flex gap-2"><Check className="h-4 w-4 text-gold mt-0.5" /> Min deposit ${p.min.toLocaleString()}</li>
-                <li className="flex gap-2"><Check className="h-4 w-4 text-gold mt-0.5" /> Daily ROI payouts</li>
-                <li className="flex gap-2"><Check className="h-4 w-4 text-gold mt-0.5" /> 24/7 expert support</li>
-                <li className="flex gap-2"><Check className="h-4 w-4 text-gold mt-0.5" /> Instant withdrawals</li>
-                <li className="flex gap-2"><Check className="h-4 w-4 text-gold mt-0.5" /> Copy trading access</li>
+                {[
+                  `Min deposit $${p.min.toLocaleString()}`,
+                  "Daily ROI payouts",
+                  "24/7 expert support",
+                  "Instant withdrawals",
+                  "Copy trading access",
+                ].map(item => (
+                  <li key={item} className="flex gap-2">
+                    <Check className="h-4 w-4 mt-0.5" style={{ color: featured ? "#fff" : "#00D4FF" }} /> {item}
+                  </li>
+                ))}
               </ul>
               <Button
-                variant={isActive ? "outlineGold" : p.popular ? "gold" : "outline"}
-                className="w-full mt-8"
-                disabled={isActive || loading === p.name}
-                onClick={() => activate(p)}
+                className={`w-full mt-8 ${featured ? "bg-white text-[#172640] hover:bg-white/90" : "bg-primary text-white hover:bg-[#00B8E0]"}`}
+                onClick={() => navigate("/dashboard/deposit")}
               >
-                {isActive ? "Active Plan" : loading === p.name ? "Activating..." : "Activate Plan"}
+                Buy Plan
               </Button>
             </Card>
           );

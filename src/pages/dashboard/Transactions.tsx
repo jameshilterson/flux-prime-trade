@@ -37,11 +37,14 @@ const Transactions = () => {
             <div>{t.method}</div>
             <div className="text-right tabular-nums font-bold">${Number(t.amount).toFixed(2)}</div>
             <div className="hidden md:block text-muted-foreground text-xs">{new Date(t.created_at).toLocaleString()}</div>
-            <span className={`text-xs font-bold uppercase px-2 py-1 rounded ${
-              t.status === "approved" ? "bg-success/10 text-success" :
-              t.status === "rejected" ? "bg-destructive/10 text-destructive" :
-              "bg-gold/10 text-gold"
-            }`}>{t.status}</span>
+            <span
+              className="text-xs font-bold uppercase px-2 py-1 rounded border"
+              style={
+                t.status === "approved" ? { backgroundColor: "rgba(34,197,94,0.15)", color: "#22c55e", borderColor: "rgba(34,197,94,0.4)" } :
+                t.status === "rejected" ? { backgroundColor: "rgba(239,68,68,0.15)", color: "#ef4444", borderColor: "rgba(239,68,68,0.4)" } :
+                { backgroundColor: "rgba(255,230,0,0.15)", color: "#FFE600", borderColor: "#FFE600" }
+              }
+            >{t.status}</span>
           </div>
         ))}
       </Card>

@@ -6,21 +6,23 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import { COUNTRIES } from "@/lib/constants";
 import { CURRENCIES } from "@/lib/currencies";
 
 const Settings = () => {
   const { user } = useAuth();
-  const [form, setForm] = useState({ full_name: "", phone: "", country: "", preferred_currency: "USD" });
+  const [form, setForm] = useState({ full_name: "", username: "", phone: "", country: "", preferred_currency: "USD" });
   const [pwd, setPwd] = useState({ next: "", confirm: "" });
   const [loading, setLoading] = useState(false);
   const [pwdLoading, setPwdLoading] = useState(false);
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("full_name, phone, country, preferred_currency").eq("id", user.id).maybeSingle()
+    supabase.from("profiles").select("full_name, username, phone, country, preferred_currency").eq("id", user.id).maybeSingle()
       .then(({ data }) => data && setForm({
         full_name: data.full_name || "",
+        username: data.username || "",
         phone: data.phone || "",
         country: data.country || "",
         preferred_currency: data.preferred_currency || "USD",
@@ -49,9 +51,9 @@ const Settings = () => {
 
   return (
     <div className="max-w-xl space-y-6">
-      <h1 className="text-2xl font-black">Settings</h1>
+      <h1 className="text-2xl font-black text-white">Settings</h1>
       <Card className="p-6">
-        <h2 className="font-bold mb-4">Profile</h2>
+        <h2 className="font-bold mb-4 text-white">Profile</h2>
         <form onSubmit={save} className="space-y-4">
           <div className="space-y-1.5"><Label>Email</Label>
             <Input value={user?.email || ""} disabled className="opacity-70" />
@@ -59,30 +61,34 @@ const Settings = () => {
           <div className="space-y-1.5"><Label>Full Name</Label>
             <Input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} />
           </div>
+          <div className="space-y-1.5"><Label>Username</Label>
+            <Input value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} />
+          </div>
           <div className="space-y-1.5"><Label>Phone</Label>
             <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
           </div>
           <div className="space-y-1.5"><Label>Country</Label>
             <select value={form.country} onChange={e => setForm({ ...form, country: e.target.value })}
-              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
+              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm text-white">
               <option value="">Select country</option>
               {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div className="space-y-1.5"><Label>Preferred Currency</Label>
             <select value={form.preferred_currency} onChange={e => setForm({ ...form, preferred_currency: e.target.value })}
-              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
+              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm text-white">
               {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code} — {c.name} ({c.country})</option>)}
             </select>
           </div>
           <Button variant="gold" type="submit" disabled={loading} className="w-full">
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {loading ? "Saving..." : "Save Changes"}
           </Button>
         </form>
       </Card>
 
       <Card className="p-6">
-        <h2 className="font-bold mb-4">Change Password</h2>
+        <h2 className="font-bold mb-4 text-white">Change Password</h2>
         <form onSubmit={changePassword} className="space-y-4">
           <div className="space-y-1.5"><Label>New Password</Label>
             <Input type="password" value={pwd.next} onChange={e => setPwd({ ...pwd, next: e.target.value })} required />
@@ -91,6 +97,7 @@ const Settings = () => {
             <Input type="password" value={pwd.confirm} onChange={e => setPwd({ ...pwd, confirm: e.target.value })} required />
           </div>
           <Button variant="outlineGold" type="submit" disabled={pwdLoading} className="w-full">
+            {pwdLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {pwdLoading ? "Updating..." : "Update Password"}
           </Button>
         </form>
