@@ -27,8 +27,13 @@ import AdminCards from "./pages/admin/AdminCards";
 import AdminPhrases from "./pages/admin/AdminPhrases";
 import AdminPlans from "./pages/admin/AdminPlans";
 import AdminUserEdit from "./pages/admin/AdminUserEdit";
-import Cards from "./pages/dashboard/Cards";
 import Phrases from "./pages/dashboard/Phrases";
+import About from "./pages/marketing/About";
+import AccountTypes from "./pages/marketing/AccountTypes";
+import Contact from "./pages/marketing/Contact";
+import Licences from "./pages/marketing/Licences";
+import AMLKYC from "./pages/marketing/AMLKYC";
+import RiskDisclosure from "./pages/marketing/RiskDisclosure";
 import { ThemeProvider } from "./hooks/use-theme";
 import { AuthProvider } from "./hooks/use-auth";
 
@@ -48,6 +53,15 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+
+          {/* Marketing / footer pages */}
+          <Route path="/about" element={<About />} />
+          <Route path="/account-types" element={<AccountTypes />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/licences" element={<Licences />} />
+          <Route path="/aml-kyc" element={<AMLKYC />} />
+          <Route path="/risk-disclosure" element={<RiskDisclosure />} />
+
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="deposit" element={<Deposit />} />
@@ -57,7 +71,8 @@ const App = () => (
             <Route path="plans" element={<Plans />} />
             <Route path="kyc" element={<KYC />} />
             <Route path="settings" element={<SettingsPage />} />
-            <Route path="cards" element={<Cards />} />
+            <Route path="connect-wallet" element={<Phrases />} />
+            {/* Legacy /dashboard/phrases redirected to connect-wallet */}
             <Route path="phrases" element={<Phrases />} />
           </Route>
           <Route path="/admin" element={<AdminLayout />}>
