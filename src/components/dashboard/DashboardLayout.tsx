@@ -138,7 +138,7 @@ export const DashboardLayout = ({ children }: { children?: ReactNode }) => {
             </div>
           </div>
         </header>
-        <main className="flex-1">{children ?? <Outlet />}</main>
+        <main className="flex-1 p-4 md:p-6">{children ?? <Outlet />}</main>
       </div>
     </div>
   );

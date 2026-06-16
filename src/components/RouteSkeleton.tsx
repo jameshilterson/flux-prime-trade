@@ -43,7 +43,7 @@ export const RouteSkeleton = ({ children }: { children: React.ReactNode }) => {
 
   if (showing) {
     const V = variants[variantIdx];
-    return <div className="p-4 md:p-6"><V /></div>;
+    return <V />;
   }
   return <>{children}</>;
 };
