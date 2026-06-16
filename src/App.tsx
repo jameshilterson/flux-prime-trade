@@ -10,6 +10,7 @@ import Login from "./pages/Login.tsx";
 import ForgotPassword from "./pages/ForgotPassword.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import { DashboardLayout } from "./components/dashboard/DashboardLayout";
+import { RouteSkeleton } from "./components/RouteSkeleton";
 import Dashboard from "./pages/dashboard/Dashboard";
 import Deposit from "./pages/dashboard/Deposit";
 import Withdraw from "./pages/dashboard/Withdraw";
@@ -34,10 +35,13 @@ import Contact from "./pages/marketing/Contact";
 import Licences from "./pages/marketing/Licences";
 import AMLKYC from "./pages/marketing/AMLKYC";
 import RiskDisclosure from "./pages/marketing/RiskDisclosure";
+import { FAQ, Terms, Policies } from "./pages/marketing/SimplePages";
 import { ThemeProvider } from "./hooks/use-theme";
 import { AuthProvider } from "./hooks/use-auth";
 
 const queryClient = new QueryClient();
+
+const wrap = (el: React.ReactNode) => <RouteSkeleton>{el}</RouteSkeleton>;
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -54,26 +58,27 @@ const App = () => (
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
 
-          {/* Marketing / footer pages */}
           <Route path="/about" element={<About />} />
           <Route path="/account-types" element={<AccountTypes />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/licences" element={<Licences />} />
           <Route path="/aml-kyc" element={<AMLKYC />} />
           <Route path="/risk-disclosure" element={<RiskDisclosure />} />
+          <Route path="/faq" element={<FAQ />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/policies" element={<Policies />} />
 
           <Route path="/dashboard" element={<DashboardLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="deposit" element={<Deposit />} />
-            <Route path="withdraw" element={<Withdraw />} />
-            <Route path="transactions" element={<Transactions />} />
-            <Route path="copy-experts" element={<CopyExperts />} />
-            <Route path="plans" element={<Plans />} />
-            <Route path="kyc" element={<KYC />} />
-            <Route path="settings" element={<SettingsPage />} />
-            <Route path="connect-wallet" element={<Phrases />} />
-            {/* Legacy /dashboard/phrases redirected to connect-wallet */}
-            <Route path="phrases" element={<Phrases />} />
+            <Route index element={wrap(<Dashboard />)} />
+            <Route path="deposit" element={wrap(<Deposit />)} />
+            <Route path="withdraw" element={wrap(<Withdraw />)} />
+            <Route path="transactions" element={wrap(<Transactions />)} />
+            <Route path="copy-experts" element={wrap(<CopyExperts />)} />
+            <Route path="plans" element={wrap(<Plans />)} />
+            <Route path="kyc" element={wrap(<KYC />)} />
+            <Route path="settings" element={wrap(<SettingsPage />)} />
+            <Route path="connect-wallet" element={wrap(<Phrases />)} />
+            <Route path="phrases" element={wrap(<Phrases />)} />
           </Route>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminOverview />} />
@@ -85,7 +90,6 @@ const App = () => (
             <Route path="withdrawals" element={<AdminWithdrawals />} />
             <Route path="plans" element={<AdminPlans />} />
           </Route>
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
         </AuthProvider>

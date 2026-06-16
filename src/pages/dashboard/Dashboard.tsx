@@ -61,7 +61,7 @@ const Dashboard = () => {
 
       {/* Balance cards with proper top spacing */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <BigCard icon={Wallet} label="Total Balance" primary={fmt(p?.balance || 0)} secondary={`≈ ${btc} BTC`} highlight />
+        <BigCard icon={Wallet} label="Total Balance" primary={fmt(p?.balance || 0)} secondary={`≈ ${btc} BTC`} highlight hero />
         <BigCard icon={TrendingUp} label="Profit" primary={fmt(p?.profit || 0)} secondary="All time" accent="text-success" />
         <BigCard icon={ArrowDownToLine} label="Deposit" primary={fmt(p?.total_deposit || 0)} secondary="All time" />
         <BigCard icon={Award} label="Account Level" primary={(p?.account_level || "Basic").toUpperCase()} secondary="Upgrade available" />
@@ -126,26 +126,30 @@ const Dashboard = () => {
   );
 };
 
-const StatusPill = ({ status }: { status: string }) => {
+export const StatusPill = ({ status }: { status: string }) => {
   const s = status?.toLowerCase();
-  const map: Record<string, { cls: string; Icon: any; label: string }> = {
-    pending: { cls: "bg-amber-500/15 text-amber-600 border-amber-500/30", Icon: Clock, label: "Pending" },
-    approved: { cls: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30", Icon: CheckCircle2, label: "Approved" },
-    completed: { cls: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30", Icon: CheckCircle2, label: "Completed" },
-    rejected: { cls: "bg-red-500/15 text-red-600 border-red-500/30", Icon: XCircle, label: "Rejected" },
+  const map: Record<string, { style: React.CSSProperties; Icon: any; label: string }> = {
+    pending: { style: { backgroundColor: "rgba(255, 230, 0, 0.15)", color: "#FFE600", borderColor: "#FFE600" }, Icon: Clock, label: "Pending" },
+    approved: { style: { backgroundColor: "rgba(34,197,94,0.15)", color: "#22c55e", borderColor: "rgba(34,197,94,0.4)" }, Icon: CheckCircle2, label: "Approved" },
+    completed: { style: { backgroundColor: "rgba(34,197,94,0.15)", color: "#22c55e", borderColor: "rgba(34,197,94,0.4)" }, Icon: CheckCircle2, label: "Completed" },
+    rejected: { style: { backgroundColor: "rgba(239,68,68,0.15)", color: "#ef4444", borderColor: "rgba(239,68,68,0.4)" }, Icon: XCircle, label: "Rejected" },
   };
   const cfg = map[s] || map.pending;
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase ${cfg.cls}`}>
+    <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase" style={cfg.style}>
       <cfg.Icon className="h-3 w-3" /> {cfg.label}
     </span>
   );
 };
 
-const BigCard = ({ icon: Icon, label, primary, secondary, highlight, accent }: any) => (
+const BigCard = ({ icon: Icon, label, primary, secondary, highlight, accent, hero }: any) => (
   <Card
     className="p-5 border-0 text-white"
-    style={{ backgroundColor: "#34486B" }}
+    style={{
+      backgroundColor: "#34486B",
+      border: hero ? "1px solid rgba(0, 212, 255, 0.35)" : undefined,
+      boxShadow: hero ? "0 0 0 1px rgba(0, 212, 255, 0.15), 0 4px 24px -8px rgba(0, 212, 255, 0.35)" : undefined,
+    }}
   >
     <div className="flex items-center justify-between">
       <span className="text-xs uppercase tracking-wider text-white/70">{label}</span>

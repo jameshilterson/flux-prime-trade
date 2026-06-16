@@ -2,7 +2,6 @@ import { getNames } from "country-list";
 
 export const COUNTRIES = getNames().sort();
 
-// Legacy code-only list (kept for existing imports). New code should use CURRENCIES from "@/lib/currencies".
 import { CURRENCY_CODES } from "./currencies";
 export const CURRENCIES = CURRENCY_CODES;
 
@@ -14,9 +13,12 @@ export const ACCOUNT_TYPES = [
 ] as const;
 
 export const PLANS = [
-  { name: "Basic", min: 500, roi: 15, duration: 7, popular: false },
-  { name: "Premium", min: 5000, roi: 20.5, duration: 14, popular: true },
-  { name: "VIP", min: 10000, roi: 36.8, duration: 60, popular: false },
+  { name: "Bronze", min: 100, roi: 12, duration: 7, popular: false },
+  { name: "Silver", min: 1000, roi: 18, duration: 14, popular: false },
+  { name: "Gold", min: 5000, roi: 25, duration: 30, popular: true },
+  { name: "Platinum", min: 25000, roi: 30, duration: 60, popular: false },
+  { name: "Diamond", min: 100000, roi: 35, duration: 90, popular: false },
+  { name: "VIP", min: 250000, roi: 40, duration: 120, popular: false },
 ];
 
 export const TRADERS = [

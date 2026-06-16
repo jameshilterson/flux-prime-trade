@@ -73,7 +73,7 @@ export const ExpertTradersLeaderboard = () => {
                   className={`h-10 w-10 rounded-full flex items-center justify-center font-black text-sm shrink-0 ${
                     t.featured ? "text-white" : "text-white"
                   }`}
-                  style={{ backgroundColor: t.featured ? "#0E57AF" : "#34486B" }}
+                  style={{ backgroundColor: t.featured ? "#00D4FF" : "#34486B" }}
                 >
                   {initials(t.name)}
                 </div>
