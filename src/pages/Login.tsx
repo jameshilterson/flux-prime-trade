@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { ForgotPasswordModal } from "@/components/ForgotPasswordModal";
+import { LiveEarningsPopup } from "@/components/LiveEarningsPopup";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ const Login = () => {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showForgot, setShowForgot] = useState(false);
+  const [showPw, setShowPw] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,11 +35,14 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 flex items-center justify-center px-4 py-12">
+    <div
+      className="min-h-screen flex items-center justify-center px-4 py-12"
+      style={{ backgroundColor: "#172640" }}
+    >
       <div className="w-full max-w-md">
-        <Link to="/" className="inline-flex items-center gap-2 mb-6">
-          <div className="h-8 w-8 rounded-lg bg-gold-gradient flex items-center justify-center font-black text-midnight">C</div>
-          <span className="font-bold text-lg text-slate-900">CryptoVault</span>
+        <Link to="/" className="flex flex-col items-center gap-2 mb-6">
+          <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center font-black text-primary-foreground text-xl">C</div>
+          <span className="font-bold text-lg text-white">CryptoVault</span>
         </Link>
 
         <div className="rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden">
@@ -64,14 +69,23 @@ const Login = () => {
                   Forgot password?
                 </button>
               </div>
-              <Input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                className="bg-white border-slate-300 text-slate-900"
-              />
-            </div>
+              <div className="relative">
+                <Input
+                  type={showPw ? "text" : "password"}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  className="bg-white border-slate-300 text-slate-900 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw(s => !s)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-800"
+                  aria-label={showPw ? "Hide password" : "Show password"}
+                >
+                  {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             <label className="flex items-center gap-2 text-sm text-slate-600">
               <Checkbox defaultChecked /> Remember me
             </label>
@@ -87,6 +101,7 @@ const Login = () => {
         </div>
       </div>
       <ForgotPasswordModal open={showForgot} onOpenChange={setShowForgot} />
+      <LiveEarningsPopup />
     </div>
   );
 };
