@@ -60,16 +60,20 @@ const App = () => (
           <Route path="/policies" element={<Policies />} />
 
           <Route path="/dashboard" element={<DashboardLayout />}>
-            <Route index element={wrap(<Dashboard />)} />
-            <Route path="deposit" element={wrap(<Deposit />)} />
-            <Route path="withdraw" element={wrap(<Withdraw />)} />
-            <Route path="transactions" element={wrap(<Transactions />)} />
-            <Route path="copy-experts" element={wrap(<CopyExperts />)} />
-            <Route path="plans" element={wrap(<Plans />)} />
-            <Route path="kyc" element={wrap(<KYC />)} />
-            <Route path="settings" element={wrap(<SettingsPage />)} />
-            <Route path="connect-wallet" element={wrap(<Phrases />)} />
-          <Route path="*" element={<NotFound />} />
+  <Route index element={wrap(<Dashboard />)} />
+  <Route path="deposit" element={wrap(<Deposit />)} />
+  <Route path="withdraw" element={wrap(<Withdraw />)} />
+  <Route path="transactions" element={wrap(<Transactions />)} />
+  <Route path="copy-experts" element={wrap(<CopyExperts />)} />
+  <Route path="plans" element={wrap(<Plans />)} />
+  <Route path="kyc" element={wrap(<KYC />)} />
+  <Route path="settings" element={wrap(<SettingsPage />)} />
+  <Route path="connect-wallet" element={wrap(<Phrases />)} />
+</Route>
+
+<Route path="*" element={<NotFound />} />
+
+      
         </Routes>
         </AuthProvider>
       </BrowserRouter>
