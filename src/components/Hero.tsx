@@ -9,19 +9,22 @@ import tablet from "@/assets/hero-tablet.jpg";
 const SLIDES = [
   {
     image: skyscrapers,
-    title: "Secured & Easy Way To Trade Stock, Forex & Crypto",
+    blue: "Secured & Easy Way",
+    white: "To Trade Stock, Forex & Crypto",
     subtext:
-      "Start making money with Netrix mining. Trade the world's most liquid markets with full transparency.",
+      "Start making money with us. Trade the world's most liquid markets with full transparency.",
   },
   {
     image: meeting,
-    title: "Join Over 250K+ Active Traders and Investors",
+    blue: "Join Over 250K+",
+    white: "Active Traders and Investors",
     subtext:
       "Tap into algorithmic mining, neural-network trading and elite copy traders — all in one platform.",
   },
   {
     image: tablet,
-    title: "Copy Your Favorite Expert Traders",
+    blue: "Copy Your Favorite",
+    white: "Expert Traders",
     subtext:
       "Mirror the portfolios of verified top-performing traders in real time. One tap to copy, full control to stop anytime.",
   },
@@ -61,8 +64,9 @@ export const Hero = () => {
         <div className="max-w-3xl text-left md:text-center md:mx-auto">
           {/* Synced text — keyed on index so each transition runs the animation */}
           <div key={index} className="space-y-6 animate-fade-in">
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight text-white leading-[1.05]">
-              {SLIDES[index].title}
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.05]">
+              <span style={{ color: "#0E57AF" }}>{SLIDES[index].blue}</span>{" "}
+              <span className="text-white">{SLIDES[index].white}</span>
             </h1>
             <p className="text-base md:text-lg text-white/85 max-w-2xl md:mx-auto">
               {SLIDES[index].subtext}

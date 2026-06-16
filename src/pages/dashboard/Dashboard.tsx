@@ -47,13 +47,15 @@ const Dashboard = () => {
 
   const fmt = (n: number) => `$${(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const btc = ((p?.balance || 0) / 67500).toFixed(8);
-  const firstName = (p?.full_name || "").trim().split(" ")[0] || "there";
+  const firstName = (p?.full_name || "").trim().split(" ")[0];
 
   return (
     <div className="space-y-8">
       {/* Greeting at very top, above everything */}
       <div className="pt-2">
-        <h1 className="text-2xl md:text-3xl font-black">Welcome back, {firstName}</h1>
+        <h1 className="text-2xl md:text-3xl font-black text-white">
+          Welcome back{firstName ? `, ${firstName}` : ""}
+        </h1>
         <p className="text-sm text-muted-foreground mt-1">Here's your portfolio at a glance.</p>
       </div>
 
@@ -120,25 +122,6 @@ const Dashboard = () => {
         )}
       </Card>
 
-      {/* Featured Expert Traders */}
-      <Card className="p-0 overflow-hidden border-border">
-        <div className="px-5 py-4 border-b border-border flex items-center gap-2">
-          <Users className="h-4 w-4 text-gold" />
-          <h3 className="font-bold">Featured Expert Traders</h3>
-        </div>
-        <ul className="divide-y divide-border">
-          {EXPERTS.map(e => (
-            <li key={e.name} className="px-5 py-3 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-gold-gradient text-midnight font-black flex items-center justify-center">{e.avatar}</div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold">{e.name} <span className="ml-1">{e.country}</span></div>
-                <div className="text-xs text-muted-foreground">Win rate {e.winRate}% · +{e.monthly}% / mo</div>
-              </div>
-              <Button size="sm" variant="gold" onClick={() => navigate("/dashboard/copy-experts")}>Copy</Button>
-            </li>
-          ))}
-        </ul>
-      </Card>
     </div>
   );
 };
@@ -160,13 +143,16 @@ const StatusPill = ({ status }: { status: string }) => {
 };
 
 const BigCard = ({ icon: Icon, label, primary, secondary, highlight, accent }: any) => (
-  <Card className={`p-5 ${highlight ? "border-gold/40 bg-gradient-to-br from-card to-gold/5" : ""}`}>
+  <Card
+    className="p-5 border-0 text-white"
+    style={{ backgroundColor: "#34486B" }}
+  >
     <div className="flex items-center justify-between">
-      <span className="text-xs uppercase tracking-wider text-muted-foreground">{label}</span>
-      <Icon className={`h-4 w-4 ${highlight ? "text-gold" : "text-muted-foreground"}`} />
+      <span className="text-xs uppercase tracking-wider text-white/70">{label}</span>
+      <Icon className={`h-4 w-4 ${highlight ? "text-primary" : "text-white/70"}`} />
     </div>
-    <div className={`mt-3 text-2xl font-black tabular-nums ${accent || ""}`}>{primary}</div>
-    <div className="text-xs text-muted-foreground mt-1">{secondary}</div>
+    <div className={`mt-3 text-2xl font-black tabular-nums ${accent || "text-white"}`}>{primary}</div>
+    <div className="text-xs text-white/60 mt-1">{secondary}</div>
   </Card>
 );
 
