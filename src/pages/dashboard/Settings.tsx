@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { CURRENCIES, COUNTRIES } from "@/lib/constants";
+import { COUNTRIES } from "@/lib/constants";
+import { CURRENCIES } from "@/lib/currencies";
 
 const Settings = () => {
   const { user } = useAuth();
@@ -56,22 +57,22 @@ const Settings = () => {
             <Input value={user?.email || ""} disabled className="opacity-70" />
           </div>
           <div className="space-y-1.5"><Label>Full Name</Label>
-            <Input value={form.full_name} onChange={e => setForm({...form, full_name: e.target.value})} />
+            <Input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} />
           </div>
           <div className="space-y-1.5"><Label>Phone</Label>
-            <Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
+            <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
           </div>
           <div className="space-y-1.5"><Label>Country</Label>
-            <select value={form.country} onChange={e => setForm({...form, country: e.target.value})}
+            <select value={form.country} onChange={e => setForm({ ...form, country: e.target.value })}
               className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
               <option value="">Select country</option>
               {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div className="space-y-1.5"><Label>Preferred Currency</Label>
-            <select value={form.preferred_currency} onChange={e => setForm({...form, preferred_currency: e.target.value})}
+            <select value={form.preferred_currency} onChange={e => setForm({ ...form, preferred_currency: e.target.value })}
               className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
-              {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+              {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code} — {c.name} ({c.country})</option>)}
             </select>
           </div>
           <Button variant="gold" type="submit" disabled={loading} className="w-full">
@@ -84,10 +85,10 @@ const Settings = () => {
         <h2 className="font-bold mb-4">Change Password</h2>
         <form onSubmit={changePassword} className="space-y-4">
           <div className="space-y-1.5"><Label>New Password</Label>
-            <Input type="password" value={pwd.next} onChange={e => setPwd({...pwd, next: e.target.value})} required />
+            <Input type="password" value={pwd.next} onChange={e => setPwd({ ...pwd, next: e.target.value })} required />
           </div>
           <div className="space-y-1.5"><Label>Confirm Password</Label>
-            <Input type="password" value={pwd.confirm} onChange={e => setPwd({...pwd, confirm: e.target.value})} required />
+            <Input type="password" value={pwd.confirm} onChange={e => setPwd({ ...pwd, confirm: e.target.value })} required />
           </div>
           <Button variant="outlineGold" type="submit" disabled={pwdLoading} className="w-full">
             {pwdLoading ? "Updating..." : "Update Password"}

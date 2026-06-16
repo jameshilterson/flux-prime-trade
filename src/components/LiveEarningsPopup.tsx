@@ -35,7 +35,8 @@ export const LiveEarningsPopup = () => {
   if (!item) return null;
   return (
     <div key={item.id} className="fixed bottom-6 left-6 z-50 animate-float-up">
-      <div className="flex items-center gap-3 rounded-xl border border-gold/30 bg-card/95 backdrop-blur-xl p-3 pr-5 shadow-elegant max-w-[320px]">
+      {/* Token-driven: bg-card auto-inverts (white card on dark site, dark card on light dashboard) */}
+      <div className="flex items-center gap-3 rounded-xl border border-border bg-card text-card-foreground shadow-elegant p-3 pr-5 max-w-[320px]">
         <div className={`h-9 w-9 rounded-lg bg-muted flex items-center justify-center ${item.color}`}>
           <item.Icon className="h-4 w-4" />
         </div>

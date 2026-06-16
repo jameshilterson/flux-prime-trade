@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
+import { About } from "@/components/About";
 import { StatsTicker } from "@/components/StatsTicker";
 import { LiveCryptoTicker } from "@/components/LiveCryptoTicker";
 import { CryptoConverter } from "@/components/CryptoConverter";
@@ -25,8 +26,8 @@ const Index = () => (
     <Navbar />
     <main>
       <Hero />
+      <About />
       <LiveCryptoTicker />
-      <StatsTicker />
 
       <section id="calculator" className="py-20">
         <div className="container grid lg:grid-cols-2 gap-8 items-start">
@@ -38,6 +39,8 @@ const Index = () => (
           <ProfitCalculator />
         </div>
       </section>
+
+      <StatsTicker />
 
       <section id="features" className="py-20 bg-muted/30">
         <div className="container">

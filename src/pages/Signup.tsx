@@ -4,11 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { COUNTRIES, CURRENCIES, ACCOUNT_TYPES } from "@/lib/constants";
-import { LiveEarningsPopup } from "@/components/LiveEarningsPopup";
+import { Loader2 } from "lucide-react";
+import { COUNTRIES, ACCOUNT_TYPES } from "@/lib/constants";
+import { CURRENCIES } from "@/lib/currencies";
 import { z } from "zod";
 
 const schema = z.object({
@@ -59,66 +59,67 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen bg-hero-gradient relative">
-      <div className="absolute inset-0 grid-bg opacity-30" />
-      <div className="container relative max-w-2xl py-12">
+    <div className="min-h-screen bg-white text-slate-900 flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-2xl">
         <Link to="/" className="inline-flex items-center gap-2 mb-6">
           <div className="h-8 w-8 rounded-lg bg-gold-gradient flex items-center justify-center font-black text-midnight">C</div>
-          <span className="font-bold text-lg text-white">CryptoVault</span>
+          <span className="font-bold text-lg text-slate-900">CryptoVault</span>
         </Link>
-        <Card className="p-6 md:p-8 border-gold/20 shadow-elegant">
-          <h1 className="text-2xl md:text-3xl font-black">Create your account</h1>
-          <p className="text-sm text-muted-foreground mt-1">Join 250,000+ investors earning passive income.</p>
-          <form onSubmit={submit} className="grid sm:grid-cols-2 gap-4 mt-6">
-            <Field label="Full Name"><Input value={form.full_name} onChange={set("full_name")} required /></Field>
-            <Field label="Username"><Input value={form.username} onChange={set("username")} required /></Field>
-            <Field label="Email"><Input type="email" value={form.email} onChange={set("email")} required /></Field>
-            <Field label="Phone Number"><Input value={form.phone} onChange={set("phone")} required /></Field>
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden">
+          <div className="bg-primary text-primary-foreground px-6 py-8 text-center">
+            <h1 className="text-2xl md:text-3xl font-black">Create your account</h1>
+            <p className="text-sm opacity-90 mt-1">Join 250,000+ investors earning passive income.</p>
+          </div>
+          <form onSubmit={submit} className="p-6 md:p-8 grid sm:grid-cols-2 gap-4">
+            <Field label="Full Name"><Input value={form.full_name} onChange={set("full_name")} required className="bg-white border-slate-300" /></Field>
+            <Field label="Username"><Input value={form.username} onChange={set("username")} required className="bg-white border-slate-300" /></Field>
+            <Field label="Email"><Input type="email" value={form.email} onChange={set("email")} required className="bg-white border-slate-300" /></Field>
+            <Field label="Phone Number"><Input value={form.phone} onChange={set("phone")} required className="bg-white border-slate-300" /></Field>
             <Field label="Country">
-              <select value={form.country} onChange={set("country")} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm" required>
+              <select value={form.country} onChange={set("country")} className="w-full h-10 rounded-md border border-slate-300 bg-white px-3 text-sm" required>
                 <option value="">Select country</option>
                 {COUNTRIES.map(c => <option key={c}>{c}</option>)}
               </select>
             </Field>
             <Field label="Gender">
-              <select value={form.gender} onChange={set("gender")} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm" required>
+              <select value={form.gender} onChange={set("gender")} className="w-full h-10 rounded-md border border-slate-300 bg-white px-3 text-sm" required>
                 <option value="">Select</option>
                 <option>Male</option><option>Female</option><option>Other</option>
               </select>
             </Field>
             <Field label="Account Type">
-              <select value={form.account_type} onChange={set("account_type")} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
+              <select value={form.account_type} onChange={set("account_type")} className="w-full h-10 rounded-md border border-slate-300 bg-white px-3 text-sm">
                 {ACCOUNT_TYPES.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
               </select>
             </Field>
             <Field label="Preferred Currency">
-              <select value={form.preferred_currency} onChange={set("preferred_currency")} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
-                {CURRENCIES.map(c => <option key={c}>{c}</option>)}
+              <select value={form.preferred_currency} onChange={set("preferred_currency")} className="w-full h-10 rounded-md border border-slate-300 bg-white px-3 text-sm">
+                {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code} — {c.name} ({c.country})</option>)}
               </select>
             </Field>
-            <Field label="Password"><Input type="password" value={form.password} onChange={set("password")} required /></Field>
-            <Field label="Confirm Password"><Input type="password" value={form.confirm} onChange={set("confirm")} required /></Field>
+            <Field label="Password"><Input type="password" value={form.password} onChange={set("password")} required className="bg-white border-slate-300" /></Field>
+            <Field label="Confirm Password"><Input type="password" value={form.confirm} onChange={set("confirm")} required className="bg-white border-slate-300" /></Field>
             <div className="sm:col-span-2 flex items-center gap-2 text-sm">
               <Checkbox id="tos" defaultChecked />
-              <label htmlFor="tos" className="text-muted-foreground">I agree to the <a className="text-gold underline">Terms & Conditions</a></label>
+              <label htmlFor="tos" className="text-slate-600">I agree to the <a className="text-primary underline">Terms & Conditions</a></label>
             </div>
-            <Button type="submit" variant="gold" disabled={loading} className="sm:col-span-2 w-full">
+            <Button type="submit" disabled={loading} className="sm:col-span-2 w-full">
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {loading ? "Creating..." : "Create Account"}
             </Button>
           </form>
-          <p className="text-sm text-center text-muted-foreground mt-4">
-            Already have an account? <Link to="/login" className="text-gold font-medium">Login</Link>
+          <p className="text-sm text-center text-slate-600 pb-6">
+            Already have an account? <Link to="/login" className="text-primary font-semibold">Sign In</Link>
           </p>
-        </Card>
+        </div>
       </div>
-      <LiveEarningsPopup />
     </div>
   );
 };
 
 const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div className="space-y-1.5">
-    <Label className="text-xs font-medium">{label}</Label>
+    <Label className="text-xs font-medium text-slate-700">{label}</Label>
     {children}
   </div>
 );

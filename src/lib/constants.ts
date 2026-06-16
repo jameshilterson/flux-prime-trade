@@ -2,11 +2,9 @@ import { getNames } from "country-list";
 
 export const COUNTRIES = getNames().sort();
 
-export const CURRENCIES = [
-  "USD", "EUR", "GBP", "JPY", "CNY", "CAD", "AUD", "CHF", "NGN", "INR",
-  "BRL", "ZAR", "MXN", "KRW", "SGD", "HKD", "AED", "SEK", "NOK", "DKK",
-  "PLN", "TRY", "RUB", "BTC", "ETH", "USDT", "USDC", "BNB", "SOL", "XRP",
-];
+// Legacy code-only list (kept for existing imports). New code should use CURRENCIES from "@/lib/currencies".
+import { CURRENCY_CODES } from "./currencies";
+export const CURRENCIES = CURRENCY_CODES;
 
 export const ACCOUNT_TYPES = [
   { value: "crypto_mining", label: "Crypto Mining" },

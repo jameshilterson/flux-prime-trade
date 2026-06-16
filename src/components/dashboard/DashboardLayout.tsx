@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
 import { useAdmin } from "@/hooks/use-admin";
+import { useIdleLogout } from "@/hooks/use-idle-logout";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, Users, ArrowDownToLine, History, ArrowUpFromLine, ShieldCheck,
@@ -32,6 +33,8 @@ export const DashboardLayout = ({ children }: { children?: ReactNode }) => {
   const [open, setOpen] = useState(false);
   const [profile, setProfile] = useState<{ full_name: string; account_level: string } | null>(null);
 
+  useIdleLogout(30 * 60 * 1000);
+
   useEffect(() => {
     if (!loading && !user) navigate("/login");
   }, [user, loading, navigate]);
@@ -45,7 +48,7 @@ export const DashboardLayout = ({ children }: { children?: ReactNode }) => {
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
 
   const Sidebar = (
-    <aside className="w-64 shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground flex flex-col">
+    <aside className="w-64 shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground flex flex-col min-h-screen h-full">
       <div className="p-5 border-b border-sidebar-border">
         <Link to="/" className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-lg bg-gold-gradient flex items-center justify-center font-black text-midnight">C</div>
@@ -81,7 +84,7 @@ export const DashboardLayout = ({ children }: { children?: ReactNode }) => {
   );
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="min-h-screen flex bg-muted/40">
       <div className="hidden lg:flex">{Sidebar}</div>
       {open && (
         <div className="fixed inset-0 z-50 flex lg:hidden">
@@ -91,21 +94,18 @@ export const DashboardLayout = ({ children }: { children?: ReactNode }) => {
       )}
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 border-b border-border bg-card/50 backdrop-blur flex items-center justify-between px-4 md:px-6 sticky top-0 z-30">
+        {/* White header with dark text — no greeting */}
+        <header className="h-16 border-b border-border bg-white text-slate-900 flex items-center justify-between px-4 md:px-6 sticky top-0 z-30">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setOpen(!open)}>
+            <Button variant="ghost" size="icon" className="lg:hidden text-slate-900" onClick={() => setOpen(!open)}>
               {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </Button>
-            <div>
-              <p className="text-sm text-muted-foreground">Welcome back,</p>
-              <p className="font-semibold text-sm leading-tight">{profile?.full_name || "Trader"}</p>
-            </div>
           </div>
           <div className="flex items-center gap-2">
             <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-gold/10 text-gold border border-gold/30 px-3 py-1 text-xs font-bold uppercase tracking-wider">
               {profile?.account_level || "basic"} account
             </span>
-            <Button variant="ghost" size="icon" onClick={toggle}>
+            <Button variant="ghost" size="icon" onClick={toggle} className="text-slate-900">
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
           </div>
