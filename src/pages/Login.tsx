@@ -86,6 +86,7 @@ const Login = () => {
                   {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+            </div>
             <label className="flex items-center gap-2 text-sm text-slate-600">
               <Checkbox defaultChecked /> Remember me
             </label>
