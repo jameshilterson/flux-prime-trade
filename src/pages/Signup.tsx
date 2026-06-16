@@ -10,6 +10,7 @@ import { Loader2 } from "lucide-react";
 import { COUNTRIES, ACCOUNT_TYPES } from "@/lib/constants";
 import { CURRENCIES } from "@/lib/currencies";
 import { z } from "zod";
+import { LiveEarningsPopup } from "@/components/LiveEarningsPopup";
 
 const schema = z.object({
   full_name: z.string().trim().min(2).max(100),
@@ -59,11 +60,14 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 flex items-center justify-center px-4 py-12">
+    <div
+      className="min-h-screen flex items-center justify-center px-4 py-12"
+      style={{ backgroundColor: "#172640" }}
+    >
       <div className="w-full max-w-2xl">
-        <Link to="/" className="inline-flex items-center gap-2 mb-6">
-          <div className="h-8 w-8 rounded-lg bg-gold-gradient flex items-center justify-center font-black text-midnight">C</div>
-          <span className="font-bold text-lg text-slate-900">CryptoVault</span>
+        <Link to="/" className="flex flex-col items-center gap-2 mb-6">
+          <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center font-black text-primary-foreground text-xl">C</div>
+          <span className="font-bold text-lg text-white">CryptoVault</span>
         </Link>
         <div className="rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden">
           <div className="bg-primary text-primary-foreground px-6 py-8 text-center">
@@ -113,6 +117,7 @@ const Signup = () => {
           </p>
         </div>
       </div>
+      <LiveEarningsPopup />
     </div>
   );
 };
