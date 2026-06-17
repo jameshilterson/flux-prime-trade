@@ -36,21 +36,21 @@ export default function Withdraw() {
   // Load currency preference
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("currency").eq("id", user.id).maybeSingle()
+    supabase.from("profiles").select("currency").eq("user_id", user.id).maybeSingle()
       .then(({ data }) => data?.currency && setCurrency(data.currency));
   }, [user?.id]);
 
   // Load balance
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("total_balance").eq("id", user.id).maybeSingle()
+    supabase.from("profiles").select("total_balance").eq("user_id", user.id).maybeSingle()
       .then(({ data }) => setBalance(data ? Number(data.total_balance) : 0));
   }, [user?.id]);
 
   // Load default verification code
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("default_verification_code").eq("id", user.id).maybeSingle()
+    supabase.from("profiles").select("default_verification_code").eq("user_id", user.id).maybeSingle()
       .then(({ data }) => { if (data?.default_verification_code) setDefaultCode(data.default_verification_code); });
   }, [user?.id]);
 
@@ -60,7 +60,7 @@ export default function Withdraw() {
     const ch = supabase
       .channel(`withdraw-balance-${user.id}`)
       .on("postgres_changes",
-        { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${user.id}` },
+        { event: "UPDATE", schema: "public", table: "profiles", filter: `user_id=eq.${user.id}` },
         (payload) => { if ((payload.new as any).total_balance !== undefined) setBalance(Number((payload.new as any).total_balance)); })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
@@ -484,4 +484,3 @@ export default function Withdraw() {
     </div>
   );
 }
-
