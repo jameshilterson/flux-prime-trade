@@ -83,15 +83,6 @@ export const DashboardLayout = ({ children }: { children?: ReactNode }) => {
           </button>
         </div>
 
-        {isAdmin && (
-          <Link
-            to="/admin"
-            onClick={() => setOpen(false)}
-            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition border border-primary/40 bg-primary/10 text-white hover:bg-primary/20 mt-3"
-          >
-            <Shield className="h-4 w-4" /> Admin Panel
-          </Link>
-        )}
       </nav>
     </aside>
   );
