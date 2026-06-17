@@ -2,12 +2,11 @@ import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { useAdmin } from "@/hooks/use-admin";
 import { useIdleLogout } from "@/hooks/use-idle-logout";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, Users, ArrowDownToLine, History, ArrowUpFromLine, ShieldCheck,
-  Layers, Settings, LogOut, Menu, X, Shield, Wallet,
+  Layers, Settings, LogOut, Menu, X, Wallet,
 } from "lucide-react";
 
 const NAV = [
@@ -24,7 +23,6 @@ const NAV = [
 
 export const DashboardLayout = ({ children }: { children?: ReactNode }) => {
   const { user, loading, signOut } = useAuth();
-  const { isAdmin } = useAdmin();
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
@@ -83,15 +81,6 @@ export const DashboardLayout = ({ children }: { children?: ReactNode }) => {
           </button>
         </div>
 
-        {isAdmin && (
-          <Link
-            to="/admin"
-            onClick={() => setOpen(false)}
-            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition border border-primary/40 bg-primary/10 text-white hover:bg-primary/20 mt-3"
-          >
-            <Shield className="h-4 w-4" /> Admin Panel
-          </Link>
-        )}
       </nav>
     </aside>
   );
