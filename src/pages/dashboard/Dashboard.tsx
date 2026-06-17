@@ -56,7 +56,7 @@ const Dashboard = () => {
     supabase
       .from("profiles")
       .select("full_name, total_balance, profit, deposit, withdrawal, account_level, currency, assigned_trader_id")
-      .eq("id", user.id)
+      .eq("user_id", user.id)
       .maybeSingle()
       .then(async ({ data }) => {
         if (!data) return;
