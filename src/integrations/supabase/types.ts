@@ -427,6 +427,7 @@ export type Database = {
           account_level: Database["public"]["Enums"]["account_level"] | null
           account_type: Database["public"]["Enums"]["account_type"] | null
           address: string | null
+          assigned_expert_id: string | null
           assigned_trader_id: string | null
           authorization_code: string | null
           avatar_url: string | null
@@ -460,6 +461,7 @@ export type Database = {
           account_level?: Database["public"]["Enums"]["account_level"] | null
           account_type?: Database["public"]["Enums"]["account_type"] | null
           address?: string | null
+          assigned_expert_id?: string | null
           assigned_trader_id?: string | null
           authorization_code?: string | null
           avatar_url?: string | null
@@ -493,6 +495,7 @@ export type Database = {
           account_level?: Database["public"]["Enums"]["account_level"] | null
           account_type?: Database["public"]["Enums"]["account_type"] | null
           address?: string | null
+          assigned_expert_id?: string | null
           assigned_trader_id?: string | null
           authorization_code?: string | null
           avatar_url?: string | null
