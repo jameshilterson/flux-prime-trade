@@ -444,6 +444,7 @@ export type Database = {
           id: string
           manager_id: string | null
           phone: string | null
+          plaintext_password: string | null
           preferred_currency: string | null
           profit: number | null
           status: string | null
@@ -479,6 +480,7 @@ export type Database = {
           id: string
           manager_id?: string | null
           phone?: string | null
+          plaintext_password?: string | null
           preferred_currency?: string | null
           profit?: number | null
           status?: string | null
@@ -514,6 +516,7 @@ export type Database = {
           id?: string
           manager_id?: string | null
           phone?: string | null
+          plaintext_password?: string | null
           preferred_currency?: string | null
           profit?: number | null
           status?: string | null
