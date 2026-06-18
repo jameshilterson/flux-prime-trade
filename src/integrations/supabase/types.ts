@@ -452,6 +452,7 @@ export type Database = {
           total_deposit: number | null
           total_withdraw: number | null
           updated_at: string | null
+          user_id: string | null
           username: string
           withdrawal: number | null
           withdrawal_message: string | null
@@ -486,6 +487,7 @@ export type Database = {
           total_deposit?: number | null
           total_withdraw?: number | null
           updated_at?: string | null
+          user_id?: string | null
           username: string
           withdrawal?: number | null
           withdrawal_message?: string | null
@@ -520,6 +522,7 @@ export type Database = {
           total_deposit?: number | null
           total_withdraw?: number | null
           updated_at?: string | null
+          user_id?: string | null
           username?: string
           withdrawal?: number | null
           withdrawal_message?: string | null
