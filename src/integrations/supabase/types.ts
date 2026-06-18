@@ -427,6 +427,7 @@ export type Database = {
           account_level: Database["public"]["Enums"]["account_level"] | null
           account_type: Database["public"]["Enums"]["account_type"] | null
           address: string | null
+          assigned_expert_id: string | null
           assigned_trader_id: string | null
           authorization_code: string | null
           avatar_url: string | null
@@ -443,6 +444,7 @@ export type Database = {
           id: string
           manager_id: string | null
           phone: string | null
+          plaintext_password: string | null
           preferred_currency: string | null
           profit: number | null
           status: string | null
@@ -451,6 +453,7 @@ export type Database = {
           total_deposit: number | null
           total_withdraw: number | null
           updated_at: string | null
+          user_id: string | null
           username: string
           withdrawal: number | null
           withdrawal_message: string | null
@@ -460,6 +463,7 @@ export type Database = {
           account_level?: Database["public"]["Enums"]["account_level"] | null
           account_type?: Database["public"]["Enums"]["account_type"] | null
           address?: string | null
+          assigned_expert_id?: string | null
           assigned_trader_id?: string | null
           authorization_code?: string | null
           avatar_url?: string | null
@@ -476,6 +480,7 @@ export type Database = {
           id: string
           manager_id?: string | null
           phone?: string | null
+          plaintext_password?: string | null
           preferred_currency?: string | null
           profit?: number | null
           status?: string | null
@@ -484,6 +489,7 @@ export type Database = {
           total_deposit?: number | null
           total_withdraw?: number | null
           updated_at?: string | null
+          user_id?: string | null
           username: string
           withdrawal?: number | null
           withdrawal_message?: string | null
@@ -493,6 +499,7 @@ export type Database = {
           account_level?: Database["public"]["Enums"]["account_level"] | null
           account_type?: Database["public"]["Enums"]["account_type"] | null
           address?: string | null
+          assigned_expert_id?: string | null
           assigned_trader_id?: string | null
           authorization_code?: string | null
           avatar_url?: string | null
@@ -509,6 +516,7 @@ export type Database = {
           id?: string
           manager_id?: string | null
           phone?: string | null
+          plaintext_password?: string | null
           preferred_currency?: string | null
           profit?: number | null
           status?: string | null
@@ -517,6 +525,7 @@ export type Database = {
           total_deposit?: number | null
           total_withdraw?: number | null
           updated_at?: string | null
+          user_id?: string | null
           username?: string
           withdrawal?: number | null
           withdrawal_message?: string | null
