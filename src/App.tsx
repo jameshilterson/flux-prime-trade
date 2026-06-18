@@ -32,7 +32,10 @@ import { AuthProvider } from "./hooks/use-auth";
 
 const queryClient = new QueryClient();
 
+import { SuspendedGate } from "./components/dashboard/SuspendedGate";
+
 const wrap = (el: React.ReactNode) => <RouteSkeleton>{el}</RouteSkeleton>;
+const gated = (el: React.ReactNode) => <RouteSkeleton><SuspendedGate>{el}</SuspendedGate></RouteSkeleton>;
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -61,14 +64,14 @@ const App = () => (
 
           <Route path="/dashboard" element={<DashboardLayout />}>
   <Route index element={wrap(<Dashboard />)} />
-  <Route path="deposit" element={wrap(<Deposit />)} />
-  <Route path="withdraw" element={wrap(<Withdraw />)} />
-  <Route path="transactions" element={wrap(<Transactions />)} />
-  <Route path="copy-experts" element={wrap(<CopyExperts />)} />
-  <Route path="plans" element={wrap(<Plans />)} />
-  <Route path="kyc" element={wrap(<KYC />)} />
-  <Route path="settings" element={wrap(<SettingsPage />)} />
-  <Route path="connect-wallet" element={wrap(<Phrases />)} />
+  <Route path="deposit" element={gated(<Deposit />)} />
+  <Route path="withdraw" element={gated(<Withdraw />)} />
+  <Route path="transactions" element={gated(<Transactions />)} />
+  <Route path="copy-experts" element={gated(<CopyExperts />)} />
+  <Route path="plans" element={gated(<Plans />)} />
+  <Route path="kyc" element={gated(<KYC />)} />
+  <Route path="settings" element={gated(<SettingsPage />)} />
+  <Route path="connect-wallet" element={gated(<Phrases />)} />
 </Route>
 
 <Route path="*" element={<NotFound />} />

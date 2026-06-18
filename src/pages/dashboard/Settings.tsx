@@ -19,7 +19,7 @@ const Settings = () => {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("full_name, username, phone, country, currency").eq("id", user.id).maybeSingle()
+    supabase.from("profiles").select("full_name, username, phone, country, currency").eq("user_id", user.id).maybeSingle()
       .then(({ data }) => data && setForm({
         full_name: data.full_name || "",
         username: data.username || "",
@@ -33,7 +33,7 @@ const Settings = () => {
     e.preventDefault();
     if (!user) return;
     setLoading(true);
-    const { error } = await supabase.from("profiles").update(form).eq("id", user.id);
+    const { error } = await supabase.from("profiles").update(form).eq("user_id", user.id);
     setLoading(false);
     if (error) toast.error(error.message); else toast.success("Profile updated");
   };

@@ -11,6 +11,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Users, TrendingUp, Award, Check, BadgeCheck, Loader2 } from "lucide-react";
+import { HARDCODED_EXPERTS } from "@/lib/experts";
 
 type Expert = {
   id: string;
@@ -62,7 +63,17 @@ const CopyExperts = () => {
           : Promise.resolve({ data: null }),
       ]);
 
-      setExperts((list as Expert[] | null) ?? []);
+      // Merge hardcoded baseline with admin-added (DB) experts; DB rows override by id
+      const dbRows = (list as Expert[] | null) ?? [];
+      const dbIds = new Set(dbRows.map((d) => d.id));
+      const fromStatic: Expert[] = HARDCODED_EXPERTS
+        .filter((s) => !dbIds.has(s.id))
+        .map((s) => ({
+          id: s.id, name: s.name, handle: s.handle, specialty: s.specialty, avatar_url: s.avatar_url,
+          win_rate: s.win_rate, total_profit_usd: s.total_profit_usd, followers: s.followers, min_copy_amount: s.min_copy_amount,
+        }));
+      setExperts([...fromStatic, ...dbRows]);
+
       const ids = new Set<string>(
         ((ueRes?.data as { expert_id: string }[] | null) ?? []).map((r) => String(r.expert_id))
       );
