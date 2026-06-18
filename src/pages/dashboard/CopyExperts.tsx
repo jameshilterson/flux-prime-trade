@@ -95,35 +95,45 @@ const CopyExperts = () => {
     if (!amt) { toast.warning("Please choose a plan amount"); return; }
 
     setSubmitting(true);
-
     const selected = PLAN_OPTIONS.find((p) => p.amount === amt);
-    const [{ error: csErr }, { error: ueErr }] = await Promise.all([
+    const isStatic = modalExpert.id.startsWith("static-");
+
+    // Always record the assigned expert id on the user's profile (string column)
+    const ops: Array<Promise<{ error: { message: string } | null }>> = [
       supabase.from("copy_subscriptions").insert({
         user_id: user.id,
-        trader_id: modalExpert.id,
+        trader_id: isStatic ? null : modalExpert.id,
         status: "active",
         plan_amount: amt,
         plan_name: selected?.label ?? null,
         recurring_monthly: recurring,
-      } as never),
-      supabase.from("user_experts").insert({
-        user_id: user.id,
-        expert_id: modalExpert.id as unknown as never,
-        is_copying: true,
-        deposit_confirmed: false,
-      } as never),
-    ]);
-
-    setSubmitting(false);
-    if (csErr || ueErr) {
-      toast.error(csErr?.message ?? ueErr?.message ?? "Failed to subscribe");
-      return;
+      } as never) as unknown as Promise<{ error: { message: string } | null }>,
+      supabase.from("profiles")
+        .update({ assigned_expert_id: modalExpert.id } as never)
+        .eq("user_id", user.id) as unknown as Promise<{ error: { message: string } | null }>,
+    ];
+    // Only mirror to user_experts for real DB experts (bigint expert_id)
+    if (!isStatic) {
+      ops.push(
+        supabase.from("user_experts").insert({
+          user_id: user.id,
+          expert_id: modalExpert.id as unknown as never,
+          is_copying: true,
+          deposit_confirmed: false,
+        } as never) as unknown as Promise<{ error: { message: string } | null }>
+      );
     }
+
+    const results = await Promise.all(ops);
+    setSubmitting(false);
+    const firstErr = results.find((r) => r.error)?.error;
+    if (firstErr) { toast.error(firstErr.message); return; }
 
     toast.success(`Subscribed to ${modalExpert.name}`);
     setModalExpert(null);
     navigate(`/dashboard/deposit?amount=${amt}`);
   };
+
 
   if (loading) {
     return (
