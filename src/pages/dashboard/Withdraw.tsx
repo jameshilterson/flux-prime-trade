@@ -236,13 +236,13 @@ export default function Withdraw() {
 
       <Tabs defaultValue="crypto">
         <TabsList className="grid w-full grid-cols-3 bg-white/5 border border-white/10 rounded-xl p-1">
-          <TabsTrigger value="crypto" className="data-[state=active]:bg-yellow-500 data-[state=active]:text-black text-white/60 rounded-lg text-sm font-medium transition-all">
+          <TabsTrigger value="crypto" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white/60 rounded-lg text-sm font-medium transition-all">
             <Bitcoin className="w-3.5 h-3.5 mr-1.5" /> Crypto
           </TabsTrigger>
-          <TabsTrigger value="bank" className="data-[state=active]:bg-yellow-500 data-[state=active]:text-black text-white/60 rounded-lg text-sm font-medium transition-all">
+          <TabsTrigger value="bank" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white/60 rounded-lg text-sm font-medium transition-all">
             <Landmark className="w-3.5 h-3.5 mr-1.5" /> Bank
           </TabsTrigger>
-          <TabsTrigger value="others" className="data-[state=active]:bg-yellow-500 data-[state=active]:text-black text-white/60 rounded-lg text-sm font-medium transition-all">
+          <TabsTrigger value="others" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white/60 rounded-lg text-sm font-medium transition-all">
             <Wallet className="w-3.5 h-3.5 mr-1.5" /> Others
           </TabsTrigger>
         </TabsList>
