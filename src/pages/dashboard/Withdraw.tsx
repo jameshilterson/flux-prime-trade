@@ -473,7 +473,6 @@ export default function Withdraw() {
 
       {/* Withdrawal History */}
       <WithdrawalHistory
-        symbol={symbol}
         refreshKey={refreshHistory}
         onResume={(txId) => { setPendingTxId(txId); setInput(""); setStepIndex(0); setAuthOpen(true); }}
       />
