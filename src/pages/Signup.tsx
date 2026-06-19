@@ -30,7 +30,7 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     full_name: "", username: "", email: "", password: "", confirm: "",
-    country: "", gender: "", phone: "", account_type: "crypto_mining", currency: "USD",
+    country: "", gender: "", phone: "", account_type: "", currency: "",
   });
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
