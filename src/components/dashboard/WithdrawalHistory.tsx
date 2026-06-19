@@ -11,75 +11,74 @@ import { StatusPill } from "@/pages/dashboard/Dashboard";
 type Row = { id: string; amount: number; method: string | null; status: string; created_at: string };
 
 interface Props {
-  symbol: string;
   refreshKey: number;
+  symbol?: string;
   onResume: (txId: string) => void;
 }
 
-export default function WithdrawalHistory({ symbol, refreshKey, onResume }: Props) {
+export default function WithdrawalHistory({ refreshKey, onResume }: Props) {
   const { user } = useAuth();
-  const [rows, setRows] = useState<Row[]>([]);
-  const [hasUnverifiedCodes, setHasUnverifiedCodes] = useState(false);
+  const [rows, setRows] = useState<Row[] | null>(null);
   const [detail, setDetail] = useState<Row | null>(null);
 
   useEffect(() => {
     if (!user) return;
-    supabase
+    let cancelled = false;
+    const load = () => supabase
       .from("transactions")
       .select("id, amount, method, status, created_at")
       .eq("user_id", user.id)
       .eq("type", "withdrawal")
       .order("created_at", { ascending: false })
-      .then(({ data }) => setRows((data as Row[] | null) ?? []));
+      .then(({ data }) => { if (!cancelled) setRows((data as Row[] | null) ?? []); });
+    load();
 
-    // If any active code remains unverified, status badges should display "Awaiting code"
-    supabase
-      .from("account_withdrawal_codes")
-      .select("auth_code, cot_code, cot_required, tax_code, tax_required, verified, is_used")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!data) return setHasUnverifiedCodes(false);
-        const d = data as Record<string, unknown>;
-        const active: boolean[] = [];
-        if (d.auth_code) active.push(false); // there's always an unverified placeholder for fresh codes
-        if (d.cot_required && d.cot_code) active.push(false);
-        if (d.tax_required && d.tax_code) active.push(false);
-        // verified flag is global on this row; if more than 1 active code exists and verified=false → multiple pending
-        const verified = Boolean(d.verified);
-        const remaining = active.length - (verified ? 1 : 0);
-        setHasUnverifiedCodes(active.length >= 2 && remaining >= 1);
-      });
+    const ch = supabase
+      .channel(`wd-history-${user.id}`)
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "transactions", filter: `user_id=eq.${user.id}` },
+        () => load())
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(ch); };
   }, [user?.id, refreshKey]);
-
-  const displayStatus = (s: string) => {
-    if (hasUnverifiedCodes && (s === "pending" || s === "pending_review")) return "awaiting_code";
-    return s;
-  };
 
   return (
     <Card className="border-white/10 p-0 overflow-hidden" style={{ backgroundColor: "#0F1629" }}>
       <div className="px-5 py-4 border-b border-white/10">
         <h3 className="text-white font-bold text-sm">Withdrawal History</h3>
       </div>
-      {rows.length === 0 ? (
+      {rows === null && (
+        <div className="divide-y divide-white/10">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="px-4 py-3 flex items-center gap-3">
+              <div className="flex-1 space-y-1.5">
+                <div className="skeleton-shimmer h-4 w-24" />
+                <div className="skeleton-shimmer h-3 w-40" />
+              </div>
+              <div className="skeleton-shimmer h-5 w-20 rounded-full" />
+              <div className="skeleton-shimmer h-8 w-20 rounded-md" />
+            </div>
+          ))}
+        </div>
+      )}
+      {rows !== null && rows.length === 0 && (
         <div className="p-6 text-center text-white/50 text-sm">No withdrawals yet.</div>
-      ) : (
+      )}
+      {rows && rows.length > 0 && (
         <div className="divide-y divide-white/10">
           {rows.map((r) => {
-            const eff = displayStatus(r.status);
-            const showComplete = eff === "awaiting_code";
+            const showComplete = r.status === "awaiting_code";
             return (
               <div key={r.id} className="px-4 py-3 flex items-center gap-3 text-sm">
                 <div className="flex-1 min-w-0">
                   <div className="text-white font-semibold tabular-nums">
-                    {symbol}{Number(r.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {Number(r.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                   <div className="text-[11px] text-white/50 truncate">
                     {r.method || "—"} · {new Date(r.created_at).toLocaleString()}
                   </div>
                 </div>
-                <StatusPill status={eff} />
+                <StatusPill status={r.status} />
                 {showComplete ? (
                   <Button size="sm" variant="gold" onClick={() => onResume(r.id)}>
                     Complete
@@ -102,9 +101,9 @@ export default function WithdrawalHistory({ symbol, refreshKey, onResume }: Prop
           </DialogHeader>
           {detail && (
             <div className="space-y-2 text-sm">
-              <DetailRow k="Amount" v={`${symbol}${Number(detail.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}`} />
+              <DetailRow k="Amount" v={Number(detail.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })} />
               <DetailRow k="Method" v={detail.method || "—"} />
-              <DetailRow k="Status" v={displayStatus(detail.status)} />
+              <DetailRow k="Status" v={detail.status} />
               <DetailRow k="Date" v={new Date(detail.created_at).toLocaleString()} />
               <DetailRow k="Reference" v={detail.id.slice(0, 8).toUpperCase()} />
             </div>
