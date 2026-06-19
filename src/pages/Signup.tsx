@@ -49,7 +49,7 @@ const Signup = () => {
         data: {
           full_name: form.full_name, username: form.username, country: form.country,
           gender: form.gender, phone: form.phone, account_type: form.account_type,
-          currency: form.currency, preferred_currency: form.currency,
+          currency: form.currency,
         },
       },
     });
