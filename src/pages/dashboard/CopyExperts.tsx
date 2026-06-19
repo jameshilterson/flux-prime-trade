@@ -23,7 +23,10 @@ type Expert = {
   total_profit_usd: number | null;
   followers: number | null;
   min_copy_amount: number | null;
+  isStatic?: boolean;
 };
+
+const ADMIN_EMAIL = "admin@cryptovault.com";
 
 const PLAN_OPTIONS = [
   { amount: 1500,  label: "Regular Plan" },
@@ -37,50 +40,56 @@ const PLAN_OPTIONS = [
 ];
 
 const fmt = (n: number | null | undefined) =>
-  `$${(Number(n) || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  (Number(n) || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
 const initialsOf = (name: string) =>
   name.split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase();
 
+// Module-level cache so revisiting this page does not re-fetch from scratch.
+let cache: { experts: Expert[]; assignedExpertId: string | null } | null = null;
+
 const CopyExperts = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [experts, setExperts] = useState<Expert[]>([]);
-  const [copyingIds, setCopyingIds] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
+  const [experts, setExperts] = useState<Expert[]>(cache?.experts ?? []);
+  const [assignedExpertId, setAssignedExpertId] = useState<string | null>(cache?.assignedExpertId ?? null);
+  const [loading, setLoading] = useState(!cache);
   const [modalExpert, setModalExpert] = useState<Expert | null>(null);
   const [planAmount, setPlanAmount] = useState<string>("");
   const [recurring, setRecurring] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     const load = async () => {
-      setLoading(true);
-      const [{ data: list }, ueRes] = await Promise.all([
+      const [{ data: list }, profRes] = await Promise.all([
         supabase.from("expert_traders").select("*").eq("is_active", true).order("sort_order"),
         user
-          ? supabase.from("user_experts").select("expert_id, is_copying").eq("user_id", user.id).eq("is_copying", true)
+          ? supabase.from("profiles").select("assigned_expert_id").eq("user_id", user.id).maybeSingle()
           : Promise.resolve({ data: null }),
       ]);
+      if (cancelled) return;
 
-      // Merge hardcoded baseline with admin-added (DB) experts; DB rows override by id
-      const dbRows = (list as Expert[] | null) ?? [];
+      const dbRows: Expert[] = ((list as Expert[] | null) ?? []).map((d) => ({ ...d, isStatic: false }));
       const dbIds = new Set(dbRows.map((d) => d.id));
       const fromStatic: Expert[] = HARDCODED_EXPERTS
         .filter((s) => !dbIds.has(s.id))
         .map((s) => ({
           id: s.id, name: s.name, handle: s.handle, specialty: s.specialty, avatar_url: s.avatar_url,
-          win_rate: s.win_rate, total_profit_usd: s.total_profit_usd, followers: s.followers, min_copy_amount: s.min_copy_amount,
+          win_rate: s.win_rate, total_profit_usd: s.total_profit_usd, followers: s.followers,
+          min_copy_amount: s.min_copy_amount, isStatic: true,
         }));
-      setExperts([...fromStatic, ...dbRows]);
 
-      const ids = new Set<string>(
-        ((ueRes?.data as { expert_id: string }[] | null) ?? []).map((r) => String(r.expert_id))
-      );
-      setCopyingIds(ids);
+      // Admin-added (DB) experts at the top, hardcoded at the bottom.
+      const merged = [...dbRows, ...fromStatic];
+      const aid = (profRes?.data as { assigned_expert_id?: string } | null)?.assigned_expert_id ?? null;
+      cache = { experts: merged, assignedExpertId: aid };
+      setExperts(merged);
+      setAssignedExpertId(aid);
       setLoading(false);
     };
     load();
+    return () => { cancelled = true; };
   }, [user?.id]);
 
   const openModal = (e: Expert) => {
@@ -96,53 +105,36 @@ const CopyExperts = () => {
 
     setSubmitting(true);
     const selected = PLAN_OPTIONS.find((p) => p.amount === amt);
-    const isStatic = modalExpert.id.startsWith("static-");
+    const planLabel = selected?.label ?? "";
 
-    // Always record the assigned expert id on the user's profile (string column)
-    const ops: Array<Promise<{ error: { message: string } | null }>> = [
-      supabase.from("copy_subscriptions").insert({
-        user_id: user.id,
-        trader_id: isStatic ? null : modalExpert.id,
-        status: "active",
-        plan_amount: amt,
-        plan_name: selected?.label ?? null,
-        recurring_monthly: recurring,
-      } as never) as unknown as Promise<{ error: { message: string } | null }>,
-      supabase.from("profiles")
-        .update({ assigned_expert_id: modalExpert.id } as never)
-        .eq("user_id", user.id) as unknown as Promise<{ error: { message: string } | null }>,
-    ];
-    // Only mirror to user_experts for real DB experts (bigint expert_id)
-    if (!isStatic) {
-      ops.push(
-        supabase.from("user_experts").insert({
-          user_id: user.id,
-          expert_id: modalExpert.id as unknown as never,
-          is_copying: true,
-          deposit_confirmed: false,
-        } as never) as unknown as Promise<{ error: { message: string } | null }>
-      );
-    }
+    // Send notification emails (fire and forget) — DO NOT persist any subscription or expert assignment.
+    const userEmail = user.email ?? "";
+    const userHtml = `
+      <p>Hi,</p>
+      <p>You have requested to subscribe to <strong>${modalExpert.name}</strong>.</p>
+      <p><strong>Plan:</strong> ${planLabel} – ${amt.toLocaleString()}</p>
+      <p>Please complete your deposit to activate this subscription.</p>
+      <p>Expert: ${modalExpert.name} ${modalExpert.handle ?? ""}<br/>Specialty: ${modalExpert.specialty ?? "—"}</p>
+      <p>Recurring: ${recurring ? "Yes (monthly)" : "No"}</p>
+    `;
+    const adminHtml = `
+      <p>${userEmail || "A user"} has requested to copy <strong>${modalExpert.name}</strong> – ${planLabel} (${amt.toLocaleString()}).</p>
+      <p>Awaiting deposit confirmation.</p>
+    `;
+    void supabase.functions.invoke("send-email", {
+      body: { to: userEmail, subject: `Subscription request: ${modalExpert.name}`, html: userHtml },
+    }).catch(() => {});
+    void supabase.functions.invoke("send-email", {
+      body: { to: ADMIN_EMAIL, subject: `Copy request from ${userEmail || "user"}`, html: adminHtml },
+    }).catch(() => {});
 
-    const results = await Promise.all(ops);
     setSubmitting(false);
-    const firstErr = results.find((r) => r.error)?.error;
-    if (firstErr) { toast.error(firstErr.message); return; }
-
-    toast.success(`Subscribed to ${modalExpert.name}`);
     setModalExpert(null);
+    toast.success("Request submitted. Check your email for deposit instructions.");
     navigate(`/dashboard/deposit?amount=${amt}`);
   };
 
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
-    );
-  }
-
+  // Render immediately when we have data cached or once first load completes — no full-page spinner on revisits.
   return (
     <div className="space-y-6">
       <div>
@@ -150,59 +142,62 @@ const CopyExperts = () => {
         <p className="text-sm text-muted-foreground">Browse our verified experts and start copying their trades.</p>
       </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {experts.map((e) => {
-          const isCopying = copyingIds.has(e.id);
-          return (
-            <Card key={e.id} className={`p-5 flex flex-col ${isCopying ? "border-emerald-500/40" : "border-border"}`}>
-              <div className="flex items-center gap-3 mb-4">
-                {e.avatar_url ? (
-                  <img src={e.avatar_url} alt={e.name} className="w-12 h-12 rounded-full object-cover shrink-0" />
-                ) : (
-                  <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center text-white font-black text-base shrink-0">
-                    {initialsOf(e.name)}
+      {loading && experts.length === 0 && (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => <div key={i} className="skeleton-shimmer h-48 rounded-xl" />)}
+        </div>
+      )}
+
+      {experts.length > 0 && (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {experts.map((e) => {
+            const isAssigned = assignedExpertId === e.id;
+            return (
+              <Card key={e.id} className={`p-5 flex flex-col ${isAssigned ? "border-emerald-500/40" : "border-border"}`}>
+                <div className="flex items-center gap-3 mb-4">
+                  {e.avatar_url ? (
+                    <img src={e.avatar_url} alt={e.name} className="w-12 h-12 rounded-full object-cover shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center text-white font-black text-base shrink-0">
+                      {initialsOf(e.name)}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <p className="font-bold text-[15px] text-white truncate">{e.name}</p>
+                      <BadgeCheck className="w-4 h-4 text-sky-400 shrink-0" />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground truncate">{e.handle}</p>
+                    {e.specialty && <p className="text-[11px] text-red-400 truncate">{e.specialty}</p>}
+                  </div>
+                </div>
+
+                {isAssigned && (
+                  <div className="mb-3 inline-flex items-center gap-1.5 self-start rounded-full bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 text-[11px] font-semibold">
+                    <Check className="w-3 h-3" /> You are copying {e.name}
                   </div>
                 )}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <p className="font-bold text-[15px] text-white truncate">{e.name}</p>
-                    <BadgeCheck className="w-4 h-4 text-sky-400 shrink-0" />
-                  </div>
-                  <p className="text-[11px] text-muted-foreground truncate">{e.handle}</p>
-                  {e.specialty && <p className="text-[11px] text-red-400 truncate">{e.specialty}</p>}
+
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  <StatBox icon={Award}      label="Win"     value={`${e.win_rate ?? 0}%`} />
+                  <StatBox icon={TrendingUp} label="Profit"  value={fmt(e.total_profit_usd)} />
+                  <StatBox icon={Users}      label="Copiers" value={(e.followers ?? 0).toLocaleString()} />
                 </div>
-              </div>
 
-              {isCopying && (
-                <div className="mb-3 inline-flex items-center gap-1.5 self-start rounded-full bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 text-[11px] font-semibold">
-                  <Check className="w-3 h-3" /> You are copying {e.name}
-                </div>
-              )}
+                <p className="text-[11px] text-muted-foreground mb-4">
+                  Min copy: <span className="text-white font-semibold">{fmt(e.min_copy_amount)}</span>
+                </p>
 
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                <StatBox icon={Award}      label="Win"     value={`${e.win_rate ?? 0}%`} />
-                <StatBox icon={TrendingUp} label="Profit"  value={fmt(e.total_profit_usd)} />
-                <StatBox icon={Users}      label="Copiers" value={(e.followers ?? 0).toLocaleString()} />
-              </div>
+                <Button variant="gold" className="mt-auto w-full" onClick={() => openModal(e)}>
+                  <TrendingUp className="h-4 w-4" />
+                  Copy Expert
+                </Button>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
-              <p className="text-[11px] text-muted-foreground mb-4">
-                Min copy: <span className="text-white font-semibold">{fmt(e.min_copy_amount)}</span>
-              </p>
-
-              <Button
-                variant={isCopying ? "outlineGold" : "gold"}
-                className="mt-auto w-full"
-                onClick={() => openModal(e)}
-              >
-                <TrendingUp className="h-4 w-4" />
-                {isCopying ? "Adjust Subscription" : "Copy Expert"}
-              </Button>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Subscription modal — white theme */}
       <Dialog open={!!modalExpert} onOpenChange={(o) => !o && setModalExpert(null)}>
         <DialogContent className="bg-white text-slate-900 rounded-2xl border-0 max-w-md">
           <DialogHeader>
@@ -225,34 +220,25 @@ const CopyExperts = () => {
                 <option value="">— Choose Plan Amount —</option>
                 {PLAN_OPTIONS.map((p) => (
                   <option key={p.amount} value={p.amount}>
-                    ${p.amount.toLocaleString()} – {p.label}
+                    {p.amount.toLocaleString()} – {p.label}
                   </option>
                 ))}
               </select>
             </div>
 
             <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-              <Checkbox
-                checked={recurring}
-                onCheckedChange={(c) => setRecurring(!!c)}
-              />
+              <Checkbox checked={recurring} onCheckedChange={(c) => setRecurring(!!c)} />
               Recurring Monthly
             </label>
           </div>
 
           <DialogFooter className="flex-row gap-2 sm:gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setModalExpert(null)}
-              className="flex-1 border-slate-300 text-slate-700 hover:bg-slate-100"
-            >
+            <Button variant="outline" onClick={() => setModalExpert(null)}
+              className="flex-1 border-slate-300 text-slate-700 hover:bg-slate-100">
               Cancel
             </Button>
-            <Button
-              onClick={completeSubscription}
-              disabled={submitting}
-              className="flex-1 bg-[#00D4FF] hover:bg-[#00B8E0] text-white"
-            >
+            <Button onClick={completeSubscription} disabled={submitting}
+              className="flex-1 bg-[#00D4FF] hover:bg-[#00B8E0] text-white">
               {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
               Complete Subscription
             </Button>
