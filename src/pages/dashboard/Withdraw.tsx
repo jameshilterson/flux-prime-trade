@@ -259,11 +259,10 @@ export default function Withdraw() {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-white/70 text-sm">Amount ({currency})</Label>
+                <Label className="text-white/70 text-sm">Amount</Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 text-sm">{symbol}</span>
                   <Input type="number" min="1" step="0.01" value={crypto.amount} onChange={(e) => setCrypto({ ...crypto, amount: e.target.value })}
-                    className="pl-7 bg-white/5 border-white/10 text-white placeholder:text-white/20" />
+                    className="bg-white/5 border-white/10 text-white placeholder:text-white/20" />
                 </div>
               </div>
             </div>
@@ -284,11 +283,10 @@ export default function Withdraw() {
           <Card className="bg-white/5 border-white/10 p-6 space-y-5">
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-white/70 text-sm">Amount ({currency})</Label>
+                <Label className="text-white/70 text-sm">Amount</Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 text-sm">{symbol}</span>
                   <Input type="number" min="1" step="0.01" value={bank.amount} onChange={(e) => setBank({ ...bank, amount: e.target.value })}
-                    className="pl-7 bg-white/5 border-white/10 text-white placeholder:text-white/20" />
+                    className="bg-white/5 border-white/10 text-white placeholder:text-white/20" />
                 </div>
               </div>
               <div className="space-y-1.5">
@@ -335,11 +333,10 @@ export default function Withdraw() {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-white/70 text-sm">Amount ({currency})</Label>
+                <Label className="text-white/70 text-sm">Amount</Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 text-sm">{symbol}</span>
                   <Input type="number" min="1" step="0.01" value={other.amount} onChange={(e) => setOther({ ...other, amount: e.target.value })}
-                    className="pl-7 bg-white/5 border-white/10 text-white placeholder:text-white/20" />
+                    className="bg-white/5 border-white/10 text-white placeholder:text-white/20" />
                 </div>
               </div>
             </div>
