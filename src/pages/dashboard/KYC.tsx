@@ -17,7 +17,7 @@ const SlimUpload = ({
     <Label>
       {label} {optional && <span className="text-white/40 text-[11px] font-normal">(if applicable)</span>}
     </Label>
-    <label className="block cursor-pointer w-1/2 min-w-[160px] border-2 border-dashed border-border rounded-lg px-3 py-2.5 text-sm hover:border-primary/60 transition">
+    <label className="block cursor-pointer w-full border-2 border-dashed border-border rounded-lg px-3 py-2.5 text-sm hover:border-primary/60 transition">
       {value ? (
         <span className="flex items-center gap-2 text-primary truncate">
           <CheckCircle2 className="h-4 w-4 shrink-0" />

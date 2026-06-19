@@ -26,9 +26,9 @@ export const AccountLevelCard = ({ level }: { level: string | null | undefined }
       style={{ backgroundColor: "#34486B", border: `1px solid ${color}33` }}
     >
       <p className="text-[10px] tracking-widest text-white/60 font-semibold">ACCOUNT LEVEL</p>
-      <div className="mt-3 flex items-center gap-3">
-        <Icon className="h-8 w-8 shrink-0" style={{ color }} />
-        <span className="font-extrabold text-lg leading-tight" style={{ color }}>
+      <div className="mt-3 flex items-center gap-1.5">
+        <Icon className="h-[1.05em] w-[1.05em] shrink-0" strokeWidth={2.25} style={{ color }} />
+        <span className="font-extrabold text-lg leading-none" style={{ color }}>
           {label}
         </span>
       </div>

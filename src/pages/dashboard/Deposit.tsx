@@ -7,7 +7,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { Copy, Upload, CheckCircle2, Loader2 } from "lucide-react";
-import { CURRENCIES } from "@/lib/currencies";
 
 const WALLETS = {
   BTC:  { addr: "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh", color: "#F7931A" },
@@ -27,19 +26,6 @@ const Deposit = () => {
   const [proof, setProof] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [currency, setCurrency] = useState("USD");
-
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("profiles")
-      .select("currency")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => data?.currency && setCurrency(data.currency));
-  }, [user]);
-
-  const symbol = CURRENCIES.find((c) => c.code === currency)?.symbol ?? currency;
 
   const onFile = (f: File | null) => {
     if (f && f.size > 5 * 1024 * 1024) { toast.error("File exceeds 5MB"); return; }
@@ -73,7 +59,6 @@ const Deposit = () => {
     setAmount(""); setProof(null); setProofPreview(null);
   };
 
-  // Bigger QR — 200px for easy scanning
   const qr = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${WALLETS[method].addr}`;
 
   return (
@@ -83,9 +68,7 @@ const Deposit = () => {
         Send crypto to the address below, then submit proof of payment.
       </p>
 
-      {/* pb-10 pushes the card bottom past the visible fold */}
       <Card className="p-4 pb-10 space-y-4">
-        {/* Method tabs */}
         <div className="grid grid-cols-3 gap-2">
           {(Object.keys(WALLETS) as Method[]).map((m) => {
             const active = method === m;
@@ -107,60 +90,27 @@ const Deposit = () => {
           })}
         </div>
 
-        {/* QR — centred, larger */}
         <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-muted/30">
-          <img
-            src={qr}
-            alt={`${method} QR`}
-            className="rounded-lg bg-white p-2"
-            width={200}
-            height={200}
-          />
+          <img src={qr} alt={`${method} QR`} className="rounded-lg bg-white p-2" width={200} height={200} />
           <div className="w-full">
             <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wider">
               {method} Wallet Address
             </p>
             <div className="flex gap-1.5">
-              <Input
-                readOnly
-                value={WALLETS[method].addr}
-                className="font-mono text-[10px] h-8 truncate"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 shrink-0"
-                onClick={() => {
-                  navigator.clipboard.writeText(WALLETS[method].addr);
-                  toast.success("Copied");
-                }}
-              >
+              <Input readOnly value={WALLETS[method].addr} className="font-mono text-[10px] h-8 truncate" />
+              <Button type="button" variant="outline" size="icon" className="h-8 w-8 shrink-0"
+                onClick={() => { navigator.clipboard.writeText(WALLETS[method].addr); toast.success("Copied"); }}>
                 <Copy className="h-3.5 w-3.5" />
               </Button>
             </div>
           </div>
         </div>
 
-        {/* Form */}
         <form onSubmit={submit} className="space-y-3">
           <div className="space-y-1">
-            <Label className="text-xs">Amount ({currency})</Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50 text-xs">
-                {symbol}
-              </span>
-              <Input
-                type="number"
-                min="1"
-                step="0.01"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                required
-                className="pl-7 h-9 text-sm"
-                placeholder="0.00"
-              />
-            </div>
+            <Label className="text-xs">Amount</Label>
+            <Input type="number" min="1" step="0.01" value={amount}
+              onChange={(e) => setAmount(e.target.value)} required className="h-9 text-sm" placeholder="0.00" />
           </div>
 
           <div className="space-y-1">
@@ -174,24 +124,14 @@ const Deposit = () => {
               ) : (
                 <>
                   <Upload className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="text-muted-foreground">
-                    Click to upload — JPG / PNG / PDF, max 5 MB
-                  </span>
+                  <span className="text-muted-foreground">Click to upload — JPG / PNG / PDF, max 5 MB</span>
                 </>
               )}
-              <input
-                type="file"
-                accept="image/*,application/pdf"
-                className="hidden"
-                onChange={(e) => onFile(e.target.files?.[0] ?? null)}
-              />
+              <input type="file" accept="image/*,application/pdf" className="hidden"
+                onChange={(e) => onFile(e.target.files?.[0] ?? null)} />
             </label>
             {proofPreview && (
-              <img
-                src={proofPreview}
-                alt="proof preview"
-                className="mt-1.5 max-h-20 rounded-md border border-border object-contain"
-              />
+              <img src={proofPreview} alt="proof preview" className="mt-1.5 max-h-20 rounded-md border border-border object-contain" />
             )}
           </div>
 

@@ -26,108 +26,121 @@ type Profile = {
 };
 
 type Expert = {
-  id: string;
-  name: string;
-  handle: string | null;
-  specialty: string | null;
-  avatar_url: string | null;
+  id: string; name: string; handle: string | null; specialty: string | null; avatar_url: string | null;
 };
 
 type Tx = {
-  id: string;
-  type: string;
-  method: string | null;
-  amount: number;
-  status: string;
-  created_at: string;
+  id: string; type: string; method: string | null; amount: number; status: string; created_at: string;
 };
+
+// Module-level cache — revisits render instantly while we refresh in the background.
+const cache: Record<string, { profile: Profile | null; expert: Expert | null; txs: Tx[]; totalWithdrawn: number; copiedCount: number }> = {};
 
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { suspended } = useProfileStatus();
-  const [p, setP] = useState<Profile | null>(null);
-  const [loadingProfile, setLoadingProfile] = useState(true);
-  const [txs, setTxs] = useState<Tx[]>([]);
-  const [expert, setExpert] = useState<Expert | null>(null);
-  const [copiedCount, setCopiedCount] = useState(0);
-  const [totalWithdrawn, setTotalWithdrawn] = useState(0);
+  const cached = user ? cache[user.id] : undefined;
+
+  const [p, setP] = useState<Profile | null>(cached?.profile ?? null);
+  const [loadingProfile, setLoadingProfile] = useState(!cached);
+  const [txs, setTxs] = useState<Tx[] | null>(cached?.txs ?? null);
+  const [expert, setExpert] = useState<Expert | null>(cached?.expert ?? null);
+  const [copiedCount, setCopiedCount] = useState(cached?.copiedCount ?? 0);
+  const [totalWithdrawn, setTotalWithdrawn] = useState(cached?.totalWithdrawn ?? 0);
   const [showSignal, setShowSignal] = useState(true);
 
   const symbol = CURRENCIES.find((c) => c.code === (p?.currency || "USD"))?.symbol ?? "$";
-  const fmt = (n: number | null | undefined) =>
+  const fmtBal = (n: number | null | undefined) =>
     `${symbol}${(Number(n) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const fmtNum = (n: number | null | undefined) =>
+    (Number(n) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   useEffect(() => {
     if (!user) return;
-    setLoadingProfile(true);
+    let cancelled = false;
 
-    supabase
-      .from("profiles")
-      .select("full_name, total_balance, profit, deposit, withdrawal, account_level, currency, assigned_expert_id")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(async ({ data }) => {
-        setLoadingProfile(false);
-        if (!data) return;
-        const profile = data as unknown as Profile;
-        setP(profile);
+    const refreshAll = async () => {
+      const { data } = await supabase.from("profiles")
+        .select("full_name, total_balance, profit, deposit, withdrawal, account_level, currency, assigned_expert_id")
+        .eq("user_id", user.id).maybeSingle();
+      if (cancelled) return;
+      const profile = (data as unknown as Profile) ?? null;
+      setP(profile); setLoadingProfile(false);
 
-        let expertId: string | null = profile.assigned_expert_id;
-        if (!expertId) {
-          const { data: ue } = await supabase
-            .from("user_experts").select("expert_id").eq("user_id", user.id).eq("is_copying", true);
-          const rows = (ue as { expert_id: string }[] | null) ?? [];
-          setCopiedCount(rows.length);
-          expertId = rows[0]?.expert_id ?? null;
-        } else {
-          setCopiedCount(1);
-        }
+      let expertId: string | null = profile?.assigned_expert_id ?? null;
+      let ccount = 0;
+      if (!expertId) {
+        const { data: ue } = await supabase.from("user_experts").select("expert_id").eq("user_id", user.id).eq("is_copying", true);
+        const rows = (ue as { expert_id: string }[] | null) ?? [];
+        ccount = rows.length;
+        expertId = rows[0]?.expert_id ?? null;
+      } else {
+        ccount = 1;
+      }
+      if (cancelled) return;
+      setCopiedCount(ccount);
 
-        if (expertId) {
-          // Try DB first, fall back to hardcoded list
-          const { data: ex } = await supabase
-            .from("expert_traders").select("id, name, handle, specialty, avatar_url")
-            .eq("id", expertId).maybeSingle();
-          const fallback = HARDCODED_EXPERTS.find((e) => e.id === expertId);
-          setExpert(
-            (ex as Expert | null) ??
-            (fallback ? { id: fallback.id, name: fallback.name, handle: fallback.handle, specialty: fallback.specialty, avatar_url: null } : null)
-          );
-        }
-      });
+      let exp: Expert | null = null;
+      if (expertId) {
+        const { data: ex } = await supabase.from("expert_traders")
+          .select("id, name, handle, specialty, avatar_url").eq("id", expertId).maybeSingle();
+        const fallback = HARDCODED_EXPERTS.find((e) => e.id === expertId);
+        exp = (ex as Expert | null) ??
+          (fallback ? { id: fallback.id, name: fallback.name, handle: fallback.handle, specialty: fallback.specialty, avatar_url: null } : null);
+      }
+      if (cancelled) return;
+      setExpert(exp);
 
-    supabase
-      .from("transactions")
-      .select("id, type, method, amount, status, created_at")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(20)
-      .then(({ data }) => {
-        const rows = (data as Tx[] | null) ?? [];
-        setTxs(rows.slice(0, 8));
-        const sum = rows
-          .filter((t) => t.type === "withdrawal" && /^approved$/i.test(t.status))
-          .reduce((acc, t) => acc + Number(t.amount || 0), 0);
-        setTotalWithdrawn(sum);
-      });
-  }, [user]);
+      const { data: txd } = await supabase.from("transactions")
+        .select("id, type, method, amount, status, created_at")
+        .eq("user_id", user.id).order("created_at", { ascending: false }).limit(20);
+      if (cancelled) return;
+      const rows = (txd as Tx[] | null) ?? [];
+      const totalW = rows.filter((t) => t.type === "withdrawal" && /^approved$/i.test(t.status))
+        .reduce((acc, t) => acc + Number(t.amount || 0), 0);
+      const txSlice = rows.slice(0, 8);
+      setTxs(txSlice);
+      setTotalWithdrawn(totalW);
+
+      cache[user.id] = { profile, expert: exp, txs: txSlice, totalWithdrawn: totalW, copiedCount: ccount };
+    };
+
+    refreshAll();
+
+    const ch = supabase
+      .channel(`dash-${user.id}`)
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "profiles", filter: `user_id=eq.${user.id}` },
+        () => refreshAll())
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "transactions", filter: `user_id=eq.${user.id}` },
+        () => refreshAll())
+      .subscribe();
+
+    const onVisible = () => { if (document.visibilityState === "visible") refreshAll(); };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(ch);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [user?.id]);
 
   const btc = (Number(p?.total_balance) / 67500 || 0).toFixed(8);
   const firstName = (p?.full_name || "").trim().split(" ")[0];
   const showLowSignal = showSignal && !loadingProfile && (Number(p?.deposit) || 0) === 0;
-  const initials = (expert?.name || "")
-    .split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase();
+  const initials = (expert?.name || "").split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase();
 
   return (
     <div className="space-y-6">
       {suspended && <SuspendedBanner />}
 
-      {/* Greeting */}
       <div className="pt-2">
         <p className="text-[11px] uppercase tracking-widest text-white/50">Welcome back</p>
         <h1 className="text-2xl md:text-3xl font-black text-white mt-1">
-          {loadingProfile ? <span className="inline-block h-7 w-40 skeleton-shimmer rounded" /> : (firstName || "Trader") + "."}
+          {loadingProfile && !p ? <span className="inline-block h-7 w-40 skeleton-shimmer rounded" /> : (firstName || "Trader") + "."}
         </h1>
         <p className="text-sm text-muted-foreground mt-1">Here's a snapshot of your portfolio.</p>
       </div>
@@ -145,10 +158,8 @@ const Dashboard = () => {
       )}
 
       {expert && (
-        <Link
-          to="/dashboard/copy-experts"
-          className="flex w-full items-center gap-2.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2 hover:bg-emerald-500/20 transition"
-        >
+        <Link to="/dashboard/copy-experts"
+          className="flex w-full items-center gap-2.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2 hover:bg-emerald-500/20 transition">
           <span className="relative flex h-2.5 w-2.5 shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
             <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
@@ -167,9 +178,8 @@ const Dashboard = () => {
         </Link>
       )}
 
-      {/* Balance cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {loadingProfile ? (
+        {loadingProfile && !p ? (
           <>
             <div className="h-32 skeleton-shimmer" />
             <div className="h-32 skeleton-shimmer" />
@@ -178,16 +188,16 @@ const Dashboard = () => {
           </>
         ) : (
           <>
-            <BigCard icon={Wallet}           label="Total Balance"  primary={fmt(p?.total_balance)} secondary={`≈ ${btc} BTC`} hero />
-            <BigCard icon={TrendingUp}       label="Profit"         primary={fmt(p?.profit)}        secondary="All time" accent="text-success" />
-            <BigCard icon={ArrowDownToLine}  label="Deposit"        primary={fmt(p?.deposit)}       secondary="All time" />
+            <BigCard icon={Wallet}          label="Total Balance" primary={fmtBal(p?.total_balance)} secondary={`≈ ${btc} BTC`} hero />
+            <BigCard icon={TrendingUp}      label="Profit"        primary={fmtBal(p?.profit)}        secondary="All time" accent="text-success" />
+            <BigCard icon={ArrowDownToLine} label="Deposit"       primary={fmtBal(p?.deposit)}       secondary="All time" />
             <AccountLevelCard level={p?.account_level} />
           </>
         )}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <SmallCard icon={ArrowUpFromLine} label="Total Withdrawals" value={fmt(totalWithdrawn)} />
+        <SmallCard icon={ArrowUpFromLine} label="Total Withdrawals" value={fmtBal(totalWithdrawn)} />
         <SmallCard icon={Users}           label="Copied Experts"    value={String(copiedCount)} />
       </div>
 
@@ -220,9 +230,24 @@ const Dashboard = () => {
           <Activity className="h-4 w-4 text-primary" />
           <h3 className="font-bold">Recent Activity</h3>
         </div>
-        {txs.length === 0 ? (
+        {txs === null && (
+          <ul className="divide-y divide-border">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <li key={i} className="px-5 py-3 flex items-center gap-3">
+                <div className="h-9 w-9 rounded-lg skeleton-shimmer" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="skeleton-shimmer h-4 w-32" />
+                  <div className="skeleton-shimmer h-3 w-44" />
+                </div>
+                <div className="skeleton-shimmer h-4 w-16" />
+              </li>
+            ))}
+          </ul>
+        )}
+        {txs !== null && txs.length === 0 && (
           <div className="p-6 text-center text-sm text-muted-foreground">No transactions yet.</div>
-        ) : (
+        )}
+        {txs && txs.length > 0 && (
           <ul className="divide-y divide-border">
             {txs.slice(0, 5).map((t) => (
               <li key={t.id} className="px-5 py-3 flex items-center gap-3">
@@ -237,7 +262,7 @@ const Dashboard = () => {
                   </div>
                   <div className="text-xs text-muted-foreground">{new Date(t.created_at).toLocaleString()}</div>
                 </div>
-                <div className="text-sm font-bold tabular-nums">{fmt(t.amount)}</div>
+                <div className="text-sm font-bold tabular-nums">{fmtNum(t.amount)}</div>
                 <StatusPill status={t.status} />
               </li>
             ))}
@@ -273,14 +298,12 @@ export const StatusPill = ({ status }: { status: string }) => {
 const BigCard = ({ icon: Icon, label, primary, secondary, accent, hero }: {
   icon: typeof Wallet; label: string; primary: string; secondary: string; accent?: string; hero?: boolean;
 }) => (
-  <Card
-    className="p-5 border-0 text-white"
+  <Card className="p-5 border-0 text-white"
     style={{
       backgroundColor: "#34486B",
       border: hero ? "1px solid rgba(0,212,255,0.35)" : undefined,
       boxShadow: hero ? "0 0 0 1px rgba(0,212,255,0.15), 0 4px 24px -8px rgba(0,212,255,0.35)" : undefined,
-    }}
-  >
+    }}>
     <div className="flex items-center justify-between">
       <span className="text-xs uppercase tracking-wider text-white/70">{label}</span>
       <Icon className={`h-4 w-4 ${hero ? "text-primary" : "text-white/70"}`} />
@@ -290,9 +313,7 @@ const BigCard = ({ icon: Icon, label, primary, secondary, accent, hero }: {
   </Card>
 );
 
-const SmallCard = ({ icon: Icon, label, value }: {
-  icon: typeof Wallet; label: string; value: string;
-}) => (
+const SmallCard = ({ icon: Icon, label, value }: { icon: typeof Wallet; label: string; value: string }) => (
   <Card className="p-4">
     <div className="flex items-center justify-between">
       <span className="text-[10px] sm:text-xs uppercase tracking-wider text-muted-foreground">{label}</span>

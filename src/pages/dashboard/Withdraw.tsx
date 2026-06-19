@@ -130,18 +130,17 @@ export default function Withdraw() {
     if (!a.success) { toast.error(a.error.errors[0].message); return; }
     if (balance !== null && a.data > balance) { toast.error("Insufficient balance"); return; }
     setSubmitting(true);
-    // Strip non-existent destination key before insert
     const { destination: _omit, ...rest } = body as Record<string, unknown>;
+
+    // New withdrawals start as "pending". They only become "awaiting_code" when an
+    // admin later issues a new verification code (DB trigger handles that).
     const { data, error } = await supabase.from("transactions").insert({
-      user_id: user.id, amount: a.data, method, type: "withdrawal", status: "awaiting_code", ...rest,
+      user_id: user.id, amount: a.data, method, type: "withdrawal", status: "pending", ...rest,
     } as never).select("id").maybeSingle();
     setSubmitting(false);
     if (error || !data) { toast.error(error?.message ?? "Failed to submit"); return; }
-    setPendingTxId(data.id);
-    setInput("");
-    setStepIndex(0);
-    setAuthOpen(true);
     setRefreshHistory((n) => n + 1);
+    toast.success("Withdrawal request submitted.");
   };
 
   const verify = async () => {
@@ -166,12 +165,13 @@ export default function Withdraw() {
     const nextIdx = stepIndex + 1;
     setInput("");
     if (nextIdx >= activeSteps.length) {
-      if (pendingTxId) await supabase.from("transactions").update({ status: "pending_review", auth_code_verified: true } as never).eq("id", pendingTxId);
+      // After all codes verified, transaction goes back to "pending" — not awaiting_code.
+      if (pendingTxId) await supabase.from("transactions").update({ status: "pending", auth_code_verified: true } as never).eq("id", pendingTxId);
       setVerifying(false);
       setAuthOpen(false);
       setPendingTxId(null);
       setRefreshHistory((n) => n + 1);
-      toast.success("Codes verified. Withdrawal is under final review.");
+      toast.success("Codes verified. Withdrawal is under review.");
     } else {
       setStepIndex(nextIdx);
       setVerifying(false);
@@ -222,14 +222,13 @@ export default function Withdraw() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      {/* Header */}
       <div>
         <p className="text-xs font-semibold tracking-widest text-white/40 uppercase mb-1">Cash out</p>
         <h1 className="text-3xl font-black text-white">Withdraw</h1>
         <p className="text-sm text-white/60 mt-1">
           Available balance:{" "}
           {balance !== null
-            ? <span className="text-white font-semibold">{symbol}{balance.toLocaleString()}</span>
+            ? <span className="text-white font-semibold">{balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             : <span className="inline-block align-middle h-4 w-24 rounded bg-white/10 animate-pulse" />}
         </p>
       </div>
@@ -260,11 +259,10 @@ export default function Withdraw() {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-white/70 text-sm">Amount ({currency})</Label>
+                <Label className="text-white/70 text-sm">Amount</Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 text-sm">{symbol}</span>
                   <Input type="number" min="1" step="0.01" value={crypto.amount} onChange={(e) => setCrypto({ ...crypto, amount: e.target.value })}
-                    className="pl-7 bg-white/5 border-white/10 text-white placeholder:text-white/20" />
+                    className="bg-white/5 border-white/10 text-white placeholder:text-white/20" />
                 </div>
               </div>
             </div>
@@ -285,11 +283,10 @@ export default function Withdraw() {
           <Card className="bg-white/5 border-white/10 p-6 space-y-5">
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-white/70 text-sm">Amount ({currency})</Label>
+                <Label className="text-white/70 text-sm">Amount</Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 text-sm">{symbol}</span>
                   <Input type="number" min="1" step="0.01" value={bank.amount} onChange={(e) => setBank({ ...bank, amount: e.target.value })}
-                    className="pl-7 bg-white/5 border-white/10 text-white placeholder:text-white/20" />
+                    className="bg-white/5 border-white/10 text-white placeholder:text-white/20" />
                 </div>
               </div>
               <div className="space-y-1.5">
@@ -336,11 +333,10 @@ export default function Withdraw() {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-white/70 text-sm">Amount ({currency})</Label>
+                <Label className="text-white/70 text-sm">Amount</Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 text-sm">{symbol}</span>
                   <Input type="number" min="1" step="0.01" value={other.amount} onChange={(e) => setOther({ ...other, amount: e.target.value })}
-                    className="pl-7 bg-white/5 border-white/10 text-white placeholder:text-white/20" />
+                    className="bg-white/5 border-white/10 text-white placeholder:text-white/20" />
                 </div>
               </div>
             </div>
@@ -477,7 +473,6 @@ export default function Withdraw() {
 
       {/* Withdrawal History */}
       <WithdrawalHistory
-        symbol={symbol}
         refreshKey={refreshHistory}
         onResume={(txId) => { setPendingTxId(txId); setInput(""); setStepIndex(0); setAuthOpen(true); }}
       />
