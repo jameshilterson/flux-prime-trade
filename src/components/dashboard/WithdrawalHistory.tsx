@@ -13,7 +13,7 @@ type Row = { id: string; amount: number; method: string | null; status: string; 
 interface Props {
   refreshKey: number;
   symbol?: string;
-  onResume: (txId: string) => void;
+  onResume: (txId: string, txAmount: number) => void;
 }
 
 export default function WithdrawalHistory({ refreshKey, onResume }: Props) {
@@ -67,7 +67,10 @@ export default function WithdrawalHistory({ refreshKey, onResume }: Props) {
       {rows && rows.length > 0 && (
         <div className="divide-y divide-white/10">
           {rows.map((r) => {
-            const showComplete = r.status === "awaiting_code";
+            // "cancelled"     -> user exited the verification modal before finishing -> Continue (resume same tx)
+            // "awaiting_code" -> admin assigned a further code (e.g. COT/tax) -> Continue (resume same tx)
+            // anything else (pending, approved, failed, rejected) -> read-only View
+            const showResume = r.status === "cancelled" || r.status === "awaiting_code";
             return (
               <div key={r.id} className="px-4 py-3 flex items-center gap-3 text-sm">
                 <div className="flex-1 min-w-0">
@@ -79,9 +82,9 @@ export default function WithdrawalHistory({ refreshKey, onResume }: Props) {
                   </div>
                 </div>
                 <StatusPill status={r.status} />
-                {showComplete ? (
-                  <Button size="sm" variant="gold" onClick={() => onResume(r.id)}>
-                    Complete
+                {showResume ? (
+                  <Button size="sm" variant="gold" onClick={() => onResume(r.id, Number(r.amount))}>
+                    Continue
                   </Button>
                 ) : (
                   <Button size="sm" variant="outline" className="border-white/20 text-white/80 hover:bg-white/10" onClick={() => setDetail(r)}>
